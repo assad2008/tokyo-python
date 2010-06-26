@@ -11,6 +11,7 @@ Useful links:
 
 - `Latest release <http://pypi.python.org/pypi/tokyo-python/>`_
 - `Documentation <http://packages.python.org/tokyo-python/>`_
+- `Mailing list <http://groups.google.com/group/tokyo-python>`_
 - `Bug reports and feature requests <http://code.google.com/p/tokyo-python/issues/list>`_
 
 

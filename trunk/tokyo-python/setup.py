@@ -59,7 +59,7 @@ class build_ext(_build_ext):
 
 setup(
       name="tokyo-python",
-      version="0.6.0",
+      version="0.6.1",
       url="http://packages.python.org/tokyo-python/",
       download_url="http://pypi.python.org/pypi/tokyo-python/",
       description="Tokyo libraries Python interface.",

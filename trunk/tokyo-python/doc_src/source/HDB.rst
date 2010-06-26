@@ -101,7 +101,7 @@ Hash Database --- :class:`HDB`
             default value (4) is used (means: 2**4).
         :param fpow: (power of 2) TODO. If specified as a negative value, the
             default value (10) is used (means 2**10).
-        :param opts: options, see `HDB.tune()/HDB.optimize() options`_.
+        :param opts: options, see :ref:`hdb_tune_optimize_options`.
 
         .. note::
             Tuning an open database is an invalid operation.
@@ -147,7 +147,7 @@ Hash Database --- :class:`HDB`
         Open a database.
 
         :param path: path to the database file.
-        :param mode: mode, see `HDB.open() modes`_
+        :param mode: mode, see :ref:`hdb_open_modes`.
 
 
     .. method:: close
@@ -296,7 +296,7 @@ Hash Database --- :class:`HDB`
             current setting is kept.
         :param fpow: (power of 2) TODO. If specified as a negative value, the
             current setting is kept.
-        :param opts: options, see `HDB.tune()/HDB.optimize() options`_. If
+        :param opts: options, see :ref:`hdb_tune_optimize_options`. If
             specified as 255 (:const:`UINT8_MAX`), the current setting is kept.
 
         .. note::
@@ -335,6 +335,8 @@ Hash Database --- :class:`HDB`
 
         The size in bytes of the database file.
 
+
+.. _hdb_open_modes:
 
 :meth:`HDB.open` modes
 ======================
@@ -375,6 +377,8 @@ The following constants can be combined with either :const:`HDBOREADER` or
 
       Locking is performed without blocking.
 
+
+.. _hdb_tune_optimize_options:
 
 :meth:`HDB.tune`/:meth:`HDB.optimize` options
 =============================================

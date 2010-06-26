@@ -112,7 +112,7 @@ Remote Database --- :class:`RDB`
 
         :param timeout: timeout in seconds. If specified as 0 or as a negative
             value, no timeout is applied.
-        :param opts: options, see `RDB.tune() options`_.
+        :param opts: options, see :ref:`rdb_tune_options`.
 
         .. note::
             Tuning an open database is an invalid operation.
@@ -190,8 +190,8 @@ Remote Database --- :class:`RDB`
 
         .. note::
 
-            * The returned value will wrap around :const:`INT_MAX` and
-              :const:`INT_MIN`. Example::
+            * The returned value will wrap around :const:`tokyo.cabinet.INT_MAX`
+              and :const:`tokyo.cabinet.INT_MIN`. Example::
 
                   >>> rdb.addint('id', INT_MAX) # setting 'id' to INT_MAX
                   2147483647
@@ -243,7 +243,7 @@ Remote Database --- :class:`RDB`
 
         :param path: path to the update log directory (relative to server).
         :param timestamp: restore from *timestamp* (in microseconds).
-        :param opts: options, see `RDB.restore()/RDB.setmaster() options`_.
+        :param opts: options, see :ref:`rdb_restore_setmaster_options`.
 
 
     .. method:: setmaster(host, port, timestamp, opts)
@@ -253,7 +253,7 @@ Remote Database --- :class:`RDB`
         :param host: name/address of the master server.
         :param port: port number of the master server.
         :param timestamp: start replication from *timestamp* (in microseconds).
-        :param opts: options, see `RDB.restore()/RDB.setmaster() options`_.
+        :param opts: options, see :ref:`rdb_restore_setmaster_options`.
 
 
     .. method:: optimize(**kwargs)

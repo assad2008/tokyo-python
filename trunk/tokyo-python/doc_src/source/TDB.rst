@@ -110,7 +110,7 @@ Table Database --- :class:`TDB`
             default value (4) is used (means: 2**4).
         :param fpow: (power of 2) TODO. If specified as a negative value, the
             default value (10) is used (means 2**10).
-        :param opts: options, see `TDB.tune()/TDB.optimize() options`_.
+        :param opts: options, see :ref:`tdb_tune_optimize_options`.
 
         .. note::
             Tuning an open database is an invalid operation.
@@ -162,7 +162,7 @@ Table Database --- :class:`TDB`
         Open a database.
 
         :param path: path to the database file.
-        :param mode: mode, see `TDB.open() modes`_
+        :param mode: mode, see :ref:`tdb_open_modes`.
 
 
     .. method:: close
@@ -247,7 +247,7 @@ Table Database --- :class:`TDB`
 
         :param column: name of the column. An empty string means *key*.
         :type column: :class:`str` (Python2)/:class:`bytes` (Python3)
-        :param type: index type, see `TDB.setindex() types`_.
+        :param type: index type, see :ref:`tdb_setindex_types`.
 
 
     .. method:: uid
@@ -266,7 +266,7 @@ Table Database --- :class:`TDB`
         Combine queries and return the result set as a tuple of keys.
 
         :param queries: a sequence of :class:`TDBQuery`.
-        :param type: type of combination, see `TDB.metasearch() types`_.
+        :param type: type of combination, see :ref:`tdb_metasearch_types`.
 
 
     .. method:: optimize([bnum=0[, apow=-1[, fpow=-1[, opts=255]]]])
@@ -280,7 +280,7 @@ Table Database --- :class:`TDB`
             current setting is kept.
         :param fpow: (power of 2) TODO. If specified as a negative value, the
             current setting is kept.
-        :param opts: options, see `TDB.tune()/TDB.optimize() options`_. If
+        :param opts: options, see :ref:`tdb_tune_optimize_options`. If
             specified as 255 (:const:`UINT8_MAX`), the current setting is kept.
 
         .. note::
@@ -319,6 +319,8 @@ Table Database --- :class:`TDB`
 
         The size in bytes of the database file.
 
+
+.. _tdb_open_modes:
 
 :meth:`TDB.open` modes
 ======================
@@ -359,6 +361,8 @@ The following constants can be combined with either :const:`TDBOREADER` or
 
       Locking is performed without blocking.
 
+
+.. _tdb_tune_optimize_options:
 
 :meth:`TDB.tune`/:meth:`TDB.optimize` options
 =============================================
@@ -449,7 +453,7 @@ Querying a Table Database --- :class:`TDBQuery`
 
         :param column: name of the column. An empty string means *key*.
         :type column: :class:`str` (Python2)/:class:`bytes` (Python3)
-        :param condition: see `TDBQuery.filter() conditions`_.
+        :param condition: see :ref:`tdbquery_filter_conditions`.
         :param expr: expression.
         :type expr: :class:`str` (Python2)/:class:`bytes` (Python3)
 
@@ -464,7 +468,7 @@ Querying a Table Database --- :class:`TDBQuery`
 
         :param column: name of the column. An empty string means *key*.
         :type column: :class:`str` (Python2)/:class:`bytes` (Python3)
-        :param type: sort type (and direction), see `TDBQuery.sort() types`_.
+        :param type: sort type (and direction), see :ref:`tdbquery_sort_types`.
 
 
     .. method:: limit([max[, skip]])
@@ -493,8 +497,13 @@ Querying a Table Database --- :class:`TDBQuery`
 
         :param callback: *callback* must be a callable that accept a pair *key*,
          *value* as its arguments. *callback* can return one, or a combination,
-         of :ref:`these constants <tdbquery_process_callback_return_consts>` to
+         of :ref:`these constants <tdbquery_process_constants>` to
          trigger post-processing or to stop iterating.
+
+
+    .. attribute:: count
+
+        The length of the result set.
 
 
     .. attribute:: hint
@@ -653,7 +662,7 @@ All conditions above can be combined with the following :
     Numerical, descending.
 
 
-.. _tdbquery_process_callback_return_consts:
+.. _tdbquery_process_constants:
 
 :meth:`TDBQuery.process` post-processing constants
 ==================================================

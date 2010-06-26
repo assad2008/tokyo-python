@@ -280,6 +280,17 @@ static PyMethodDef TDBQuery_tp_methods[] = {
 };
 
 
+/* TDBQuery.count */
+PyDoc_STRVAR(TDBQuery_count_doc,
+"TODO.");
+
+static PyObject *
+TDBQuery_count_get(TDBQuery *self, void *closure)
+{
+    return Py_BuildValue("i", tctdbqrycount(self->qry));
+}
+
+
 /* TDBQuery.hint */
 PyDoc_STRVAR(TDBQuery_hint_doc,
 "TODO.");
@@ -293,6 +304,7 @@ TDBQuery_hint_get(TDBQuery *self, void *closure)
 
 /* TDBQueryType.tp_getsets */
 static PyGetSetDef TDBQuery_tp_getsets[] = {
+    {"count", (getter)TDBQuery_count_get, NULL, TDBQuery_count_doc, NULL},
     {"hint", (getter)TDBQuery_hint_get, NULL, TDBQuery_hint_doc, NULL},
     {NULL}  /* Sentinel */
 };
