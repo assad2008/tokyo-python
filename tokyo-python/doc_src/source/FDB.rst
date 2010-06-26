@@ -49,8 +49,8 @@ Fixed-length Database --- :class:`FDB`
           :class:`str`.
         * Python3: *key* must be :class:`int` and *value* must be :class:`bytes`.
 
-        On top of that *key* **must always be > 0**. See `Special keys`_ for
-        exceptions to this rule.
+        On top of that *key* **must always be > 0**. See :ref:`fdb_special_keys`
+        for exceptions to this rule.
 
     .. seealso::
         `The Fixed-length Database API
@@ -105,7 +105,7 @@ Fixed-length Database --- :class:`FDB`
             aligned to the system page size. If specified as 0 or as a negative
             value, the default value (268435456) is used.
 
-        See `Note on tuning/optimizing a fixed-length database`_.
+        See :ref:`fdb_tune_optimize_note`.
 
         .. note::
             Tuning an open database is an invalid operation.
@@ -116,7 +116,7 @@ Fixed-length Database --- :class:`FDB`
         Open a database.
 
         :param path: path to the database file.
-        :param mode: mode, see `FDB.open() modes`_
+        :param mode: mode, see :ref:`fdb_open_modes`.
 
 
     .. method:: close
@@ -254,7 +254,7 @@ Fixed-length Database --- :class:`FDB`
             aligned to the system page size. If specified as 0 or as a negative
             value, the current setting is kept.
 
-        See `Note on tuning/optimizing a fixed-length database`_.
+        See :ref:`fdb_tune_optimize_note`.
 
         .. note::
             Optimizing a read only database, or during a transaction, is an
@@ -293,6 +293,8 @@ Fixed-length Database --- :class:`FDB`
         The size in bytes of the database file.
 
 
+.. _fdb_tune_optimize_note:
+
 Note on tuning/optimizing a fixed-length database
 =================================================
 
@@ -311,6 +313,8 @@ following function::
         # 256 is the database header size
         return int((size - 256) / (width + 1))
 
+
+.. _fdb_open_modes:
 
 :meth:`FDB.open` modes
 ======================
@@ -351,6 +355,8 @@ The following constants can be combined with either :const:`FDBOREADER` or
 
       Locking is performed without blocking.
 
+
+.. _fdb_special_keys:
 
 Special *keys*
 ==============

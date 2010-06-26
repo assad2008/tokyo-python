@@ -29,7 +29,7 @@ help:
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf $(BUILDDIR) $(HTMLDIR)/*
+	-rm -rf $(BUILDDIR) $(HTMLDIR)/* $(HTMLDIR)/.buildinfo
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(HTMLDIR)

@@ -113,7 +113,7 @@ B+ Tree Database --- :class:`BDB`
             default value (8) is used (means: 2**8).
         :param fpow: (power of 2) TODO. If specified as a negative value, the
             default value (10) is used (means 2**10).
-        :param opts: options, see `BDB.tune()/BDB.optimize() options`_.
+        :param opts: options, see :ref:`bdb_tune_optimize_options`.
 
         .. note::
             Tuning an open database is an invalid operation.
@@ -164,10 +164,10 @@ B+ Tree Database --- :class:`BDB`
         Set the compare callback function.
 
         :param callback: if it is an :class:`int`, it must be one of
-            `BDB.setcmpfunc() compare callback constants`_. Otherwise, it must
-            be a :class:`callable` taking two arguments, *a* and *b*, and
-            returning ``1`` if *a* is greater than *b*, ``0`` if *a* is equal to
-            *b*, and ``-1`` if *a* is less than *b*.
+            :ref:`bdb_setcmpfunc_constants`. Otherwise, it must be a
+            :class:`callable` taking two arguments, *a* and *b*, and returning
+            ``1`` if *a* is greater than *b*, ``0`` if *a* is equal to *b*, and
+            ``-1`` if *a* is less than *b*.
 
         .. warning::
 
@@ -200,7 +200,7 @@ B+ Tree Database --- :class:`BDB`
         Open a database.
 
         :param path: path to the database file.
-        :param mode: mode, see `BDB.open() modes`_.
+        :param mode: mode, see :ref:`bdb_open_modes`.
 
 
     .. method:: close
@@ -402,7 +402,7 @@ B+ Tree Database --- :class:`BDB`
             current setting is kept.
         :param fpow: (power of 2) TODO. If specified as a negative value, the
             current setting is kept.
-        :param opts: options, see `BDB.tune()/BDB.optimize() options`_. If
+        :param opts: options, see :ref:`bdb_tune_optimize_options`. If
             specified as 255 (:const:`UINT8_MAX`), the current setting is kept.
 
         .. note::
@@ -455,6 +455,8 @@ B+ Tree Database --- :class:`BDB`
         The size in bytes of the database file.
 
 
+.. _bdb_open_modes:
+
 :meth:`BDB.open` modes
 ======================
 
@@ -495,6 +497,8 @@ The following constants can be combined with either :const:`BDBOREADER` or
       Locking is performed without blocking.
 
 
+.. _bdb_tune_optimize_options:
+
 :meth:`BDB.tune`/:meth:`BDB.optimize` options
 =============================================
 
@@ -514,6 +518,8 @@ The following constants can be combined with either :const:`BDBOREADER` or
 
     Each page is compressed with TCBS encoding.
 
+
+.. _bdb_setcmpfunc_constants:
 
 :meth:`BDB.setcmpfunc` compare callback constants
 =================================================
@@ -583,7 +589,7 @@ The following constants can be combined with either :const:`BDBOREADER` or
 
         Store a value at/around the cursor's current position.
 
-        :param mode: see `BDBCursor.put() modes`_.
+        :param mode: see :ref:`bdbcursor_put_modes`.
 
 
     .. method:: remove
@@ -606,6 +612,8 @@ The following constants can be combined with either :const:`BDBOREADER` or
 
         Get current item (a *(key, value)* tuple).
 
+
+.. _bdbcursor_put_modes:
 
 :meth:`BDBCursor.put` modes
 ===========================

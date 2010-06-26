@@ -5,6 +5,10 @@ Todo
 ====
 
 - tokyo.dystopia module
+- Indexed Database (IDB)
+- Q-gram Database (QDB)
+- Tagged Database (JDB)
+- Word Database (WDB)
 - TDBQuery/RTDBQuery tests
 - tokyo.dbm tests
 - more/better tests
@@ -13,6 +17,12 @@ Todo
 - Array List (List)?
 - Hash Map (Map)?
 - Ordered Tree (Tree)?
+
+
+Release 0.6.1
+=============
+
+- added attribute TDBQuery.count
 
 
 Release 0.6.0
