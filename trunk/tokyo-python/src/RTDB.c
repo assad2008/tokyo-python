@@ -171,6 +171,22 @@ RTDBQuery_filter(RTDBQuery *self, PyObject *args)
 }
 
 
+/* RTDBQuery.count() */
+PyDoc_STRVAR(RTDBQuery_count_doc,
+"Returns the length of the result set.");
+
+static PyObject *
+RTDBQuery_count(RTDBQuery *self)
+{
+    int count;
+
+    Py_BEGIN_ALLOW_THREADS
+    count = tcrdbqrysearchcount(self->rqry);
+    Py_END_ALLOW_THREADS
+    return Py_BuildValue("i", count);
+}
+
+
 /* RTDBQueryType.tp_methods */
 static PyMethodDef RTDBQuery_tp_methods[] = {
     {"search", (PyCFunction)RTDBQuery_search, METH_NOARGS, RTDBQuery_search_doc},
@@ -178,19 +194,9 @@ static PyMethodDef RTDBQuery_tp_methods[] = {
     {"sort", (PyCFunction)RTDBQuery_sort, METH_VARARGS, RTDBQuery_sort_doc},
     {"limit", (PyCFunction)RTDBQuery_limit, METH_VARARGS, RTDBQuery_limit_doc},
     {"filter", (PyCFunction)RTDBQuery_filter, METH_VARARGS, RTDBQuery_filter_doc},
+    {"count", (PyCFunction)RTDBQuery_count, METH_NOARGS, RTDBQuery_count_doc},
     {NULL}  /* Sentinel */
 };
-
-
-/* RTDBQuery.count */
-PyDoc_STRVAR(RTDBQuery_count_doc,
-"TODO.");
-
-static PyObject *
-RTDBQuery_count_get(RTDBQuery *self, void *closure)
-{
-    return Py_BuildValue("i", tcrdbqrysearchcount(self->rqry));
-}
 
 
 /* RTDBQuery.hint */
@@ -206,7 +212,6 @@ RTDBQuery_hint_get(RTDBQuery *self, void *closure)
 
 /* RTDBQueryType.tp_getsets */
 static PyGetSetDef RTDBQuery_tp_getsets[] = {
-    {"count", (getter)RTDBQuery_count_get, NULL, RTDBQuery_count_doc, NULL},
     {"hint", (getter)RTDBQuery_hint_get, NULL, RTDBQuery_hint_doc, NULL},
     {NULL}  /* Sentinel */
 };

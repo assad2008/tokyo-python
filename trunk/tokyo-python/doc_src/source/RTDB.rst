@@ -332,9 +332,9 @@ Querying a Remote Table Database --- :class:`RTDBQuery`
         Remove all records corresponding to the result set from the database.
 
 
-    .. attribute:: count
+    .. method:: count
 
-        The length of the result set.
+        Return the length of the result set.
 
 
     .. attribute:: hint

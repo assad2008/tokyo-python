@@ -22,7 +22,8 @@ Todo
 Release 0.6.1
 =============
 
-- added attribute TDBQuery.count
+- changed attribute RTDBQuery.count to method RTDBQuery.count()
+- added method TDBQuery.count()
 
 
 Release 0.6.0
@@ -43,7 +44,7 @@ Release 0.6.0
 - removed OSError (which should have been IOError anyway) from all open() and
   copy() methods, due to BDB.setcmpfunc()
 - added Remote Table Database (RTDB)
-- changed method TDBQuery.hint() to  attribute TDBQuery.hint
+- changed method TDBQuery.hint() to attribute TDBQuery.hint
 
 
 Release 0.5.0

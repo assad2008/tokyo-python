@@ -267,6 +267,17 @@ TDBQuery_filter(TDBQuery *self, PyObject *args)
 }
 
 
+/* TDBQuery.count() */
+PyDoc_STRVAR(TDBQuery_count_doc,
+"Returns the length of the result set.");
+
+static PyObject *
+TDBQuery_count(TDBQuery *self)
+{
+    return Py_BuildValue("i", tctdbqrycount(self->qry));
+}
+
+
 /* TDBQueryType.tp_methods */
 static PyMethodDef TDBQuery_tp_methods[] = {
     {"search", (PyCFunction)TDBQuery_search, METH_NOARGS, TDBQuery_search_doc},
@@ -276,19 +287,9 @@ static PyMethodDef TDBQuery_tp_methods[] = {
     {"sort", (PyCFunction)TDBQuery_sort, METH_VARARGS, TDBQuery_sort_doc},
     {"limit", (PyCFunction)TDBQuery_limit, METH_VARARGS, TDBQuery_limit_doc},
     {"filter", (PyCFunction)TDBQuery_filter, METH_VARARGS, TDBQuery_filter_doc},
+    {"count", (PyCFunction)TDBQuery_count, METH_NOARGS, TDBQuery_count_doc},
     {NULL}  /* Sentinel */
 };
-
-
-/* TDBQuery.count */
-PyDoc_STRVAR(TDBQuery_count_doc,
-"TODO.");
-
-static PyObject *
-TDBQuery_count_get(TDBQuery *self, void *closure)
-{
-    return Py_BuildValue("i", tctdbqrycount(self->qry));
-}
 
 
 /* TDBQuery.hint */
@@ -304,7 +305,6 @@ TDBQuery_hint_get(TDBQuery *self, void *closure)
 
 /* TDBQueryType.tp_getsets */
 static PyGetSetDef TDBQuery_tp_getsets[] = {
-    {"count", (getter)TDBQuery_count_get, NULL, TDBQuery_count_doc, NULL},
     {"hint", (getter)TDBQuery_hint_get, NULL, TDBQuery_hint_doc, NULL},
     {NULL}  /* Sentinel */
 };
