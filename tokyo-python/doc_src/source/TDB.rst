@@ -501,9 +501,9 @@ Querying a Table Database --- :class:`TDBQuery`
          trigger post-processing or to stop iterating.
 
 
-    .. attribute:: count
+    .. method:: count
 
-        The length of the result set.
+        Return the length of the result set.
 
 
     .. attribute:: hint

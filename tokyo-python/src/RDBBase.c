@@ -190,7 +190,7 @@ RDBBase_open(RDBBase *self, PyObject *args, PyObject *kwargs)
     }
     if (!strcmp(dbtype, "fixed-length")) {
         set_error(PyExc_NotImplementedError,
-                  "fixed-length databases are not (yet?) supported");
+                  "fixed-length databases are not supported");
         return NULL;
     }
     return dbtype;
