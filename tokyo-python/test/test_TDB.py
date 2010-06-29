@@ -3,19 +3,7 @@ import sys
 import os
 import tempfile
 
-from tokyo.cabinet import TDBOREADER, TDBOWRITER, TDBOCREAT, TDB as _TDB, Error
-
-
-class TDB(_TDB):
-
-    def keys(self):
-        return (key for key in self)
-
-    def values(self):
-        return (self[key] for key in self)
-
-    def items(self):
-        return ((key, self[key]) for key in self)
+from tokyo.cabinet import TDBOREADER, TDBOWRITER, TDBOCREAT, TDB, Error
 
 
 class TDBTest(unittest.TestCase):
@@ -72,15 +60,15 @@ class TDBTestDict(TDBTest):
         self.db[b"a"] = {b"test": b"a"}
         self.db[b"b"] = {b"test": b"b"}
         self.assertEqual(len(self.db), 2)
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {b"a": {b"test": b"a"}, b"b": {b"test": b"b"}})
         self.db[b"c"] = {b"test": b"c"}
         self.db[b"a"] = {b"test": b"aa"}
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {b"a": {b"test": b"aa"}, b"b": {b"test": b"b"}, b"c": {b"test": b"c"}})
         del self.db[b"b"]
         self.assertEqual(len(self.db), 2)
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {b"a": {b"test": b"aa"}, b"c": {b"test": b"c"}})
 
     def test_clear(self):
@@ -89,21 +77,19 @@ class TDBTestDict(TDBTest):
         self.assertEqual(len(self.db), 2)
         self.db.clear()
         self.assertEqual(len(self.db), 0)
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {})
 
 
 class TDBTestIter(TDBTest):
 
     def test_iter(self):
-        i = iter(self.db)
-        self.assertEqual(len(i), 0)
         self.db[b"a"] = {b"test": b"a"}
         self.db[b"b"] = {b"test": b"b"}
         self.db[b"c"] = {b"test": b"c"}
         i = iter(self.db)
-        self.assertEqual(len(i), len(self.db))
         self.assertTrue(b"a" in i)
+        i = iter(self.db)
         self.assertEqual([b"a", b"b", b"c"], sorted(i))
         i = iter(self.db)
         a = next(i)
@@ -112,12 +98,40 @@ class TDBTestIter(TDBTest):
         self.assertRaises(StopIteration, next, i)
         self.assertEqual([b"a", b"b", b"c"], sorted((a, b, c)))
         i = iter(self.db)
-        self.assertEqual(len(i), 3)
         a = next(i)
         del self.db[b"b"]
-        self.db[b"d"] = {b"test": b"d"}
-        self.assertEqual(len(i), 3)
         self.assertRaises(Error, next, i)
+        i = iter(self.db)
+        a = next(i)
+        self.db[b"d"] = {b"test": b"d"}
+        self.assertRaises(Error, next, i)
+        i = iter(self.db)
+        a = next(i)
+        del self.db[b"d"]
+        self.db[b"d"] = {b"test": b"e"}
+        self.assertRaises(Error, next, i)
+
+    def test_iterkeys(self):
+        self.db[b"a"] = {b"test": b"a"}
+        self.db[b"b"] = {b"test": b"b"}
+        self.db[b"c"] = {b"test": b"c"}
+        self.assertEqual([b"a", b"b", b"c"],
+                         sorted(list(self.db.iterkeys())))
+
+    def test_itervalues(self):
+        self.db[b"a"] = {b"test": b"a"}
+        self.db[b"b"] = {b"test": b"b"}
+        self.db[b"c"] = {b"test": b"c"}
+        self.assertEqual([{b"test": b"a"}, {b"test": b"b"}, {b"test": b"c"}],
+                         list(self.db.itervalues()))
+
+    def test_iteritems(self):
+        self.db[b"a"] = {b"test": b"a"}
+        self.db[b"b"] = {b"test": b"b"}
+        self.db[b"c"] = {b"test": b"c"}
+        self.assertEqual({b"a": {b"test": b"a"}, b"b": {b"test": b"b"},
+                          b"c": {b"test": b"c"}},
+                         dict(self.db.iteritems()))
 
 
 class TDBTestPut(TDBTest):
