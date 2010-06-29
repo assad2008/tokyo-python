@@ -89,7 +89,7 @@ Returns the version string of the underlying Tokyo Tyrant library.");
 static PyObject *
 tyrant_version(PyObject *module)
 {
-    return Py_BuildValue("s", ttversion);
+    return PyString_FromString(ttversion);
 }
 
 

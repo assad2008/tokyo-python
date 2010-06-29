@@ -59,6 +59,40 @@ set_stopiteration_error(void)
 }
 
 
+#if PY_MAJOR_VERSION >= 3
+/* PyUnicode to char * */
+char *
+PyUnicode_AS_STRING(PyObject *unicode)
+{
+    PyObject *tmp;
+    char *result;
+
+    tmp = PyUnicode_EncodeUTF8(PyUnicode_AS_UNICODE(unicode),
+                               PyUnicode_GET_SIZE(unicode), NULL);
+    if (!tmp) {
+        return NULL;
+    }
+    result = PyBytes_AS_STRING(tmp);
+    Py_DECREF(tmp);
+    return result;
+}
+
+char *
+PyUnicode_AsString(PyObject *unicode)
+{
+    if (!PyUnicode_Check(unicode)) {
+        PyErr_SetString(PyExc_TypeError, "a string is required");
+        return NULL;
+    }
+    return PyUnicode_AS_STRING(unicode);
+}
+
+#define PyString_AsString PyUnicode_AsString
+#define PyString_FromString PyUnicode_FromString
+#define PyInt_FromLong PyLong_FromLong
+#endif
+
+
 /* convert a TCLIST to a fozenset */
 PyObject *
 tclist_to_frozenset(TCLIST *result)

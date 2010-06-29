@@ -15,38 +15,6 @@ set_rdb_error(TCRDB *rdb, const char *key)
 }
 
 
-#if PY_MAJOR_VERSION >= 3
-/* PyUnicode to char * */
-char *
-PyUnicode_AS_STRING(PyObject *unicode)
-{
-    PyObject *tmp;
-    char *result;
-
-    tmp = PyUnicode_EncodeUTF8(PyUnicode_AS_UNICODE(unicode),
-                               PyUnicode_GET_SIZE(unicode), NULL);
-    if (!tmp) {
-        return NULL;
-    }
-    result = PyBytes_AS_STRING(tmp);
-    Py_DECREF(tmp);
-    return result;
-}
-
-char *
-PyUnicode_AsString(PyObject *unicode)
-{
-    if (!PyUnicode_Check(unicode)) {
-        PyErr_SetString(PyExc_TypeError, "a string is required");
-        return NULL;
-    }
-    return PyUnicode_AS_STRING(unicode);
-}
-
-#define PyString_AsString PyUnicode_AsString
-#endif
-
-
 /* convert a dict to a string
    {"key1": "value1", "key2": "value2"} -> "key1=value1#key2=value2" */
 char *
@@ -99,7 +67,7 @@ tsv_to_dict(const char *status, PyObject *pystatus)
     for (i = 0; i < len; i++) {
         item = tcstrsplit(tclistval2(items, i), "\t");
         if (tclistnum(item) == 2) {
-            pyvalue = Py_BuildValue("s", tclistval2(item, 1));
+            pyvalue = PyString_FromString(tclistval2(item, 1));
             if (!pyvalue) {
                 tclistdel(item);
                 tclistdel(items);

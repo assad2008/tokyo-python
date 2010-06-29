@@ -315,22 +315,21 @@ static PyObject *
 BDBCursor_item(BDBCursor *self)
 {
     TCXSTR *key, *value;
-    PyObject *pyresult;
-#if PY_MAJOR_VERSION >= 3
-    const char *format = "(yy)";
-#else
-    const char *format = "(ss)";
-#endif
+    PyObject *pykey, *pyvalue, *pyresult = NULL;
 
     key = tcxstrnew();
     value = tcxstrnew();
     if (!tcbdbcurrec(self->cur, key, value)) {
         set_bdb_error(self->bdb->bdb, NULL);
-        pyresult = NULL;
     }
     else {
-        pyresult = Py_BuildValue(format, (char *)tcxstrptr(key),
-                                 (char *)tcxstrptr(value));
+        pykey = PyBytes_FromString((char *)tcxstrptr(key));
+        pyvalue = PyBytes_FromString((char *)tcxstrptr(value));
+        if (pykey && pyvalue) {
+            pyresult = PyTuple_Pack(2, pykey, pyvalue);
+        }
+        Py_XDECREF(pykey);
+        Py_XDECREF(pyvalue);
     }
     tcxstrdel(key);
     tcxstrdel(value);
@@ -1360,7 +1359,7 @@ BDB_addint(BDB *self, PyObject *args)
         }
     }
     self->changed = true;
-    return Py_BuildValue("i", result);
+    return PyInt_FromLong((long)result);
 }
 
 
@@ -1448,7 +1447,7 @@ BDB_path_get(BDB *self, void *closure)
 
     path = tcbdbpath(self->bdb);
     if (path) {
-        return Py_BuildValue("s", path);
+        return PyString_FromString(path);
     }
     Py_RETURN_NONE;
 }

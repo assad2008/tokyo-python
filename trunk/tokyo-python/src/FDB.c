@@ -640,7 +640,7 @@ FDB_addint(FDB *self, PyObject *args)
         }
     }
     self->changed = true;
-    return Py_BuildValue("i", result);
+    return PyInt_FromLong((long)result);
 }
 
 
@@ -714,7 +714,7 @@ FDB_path_get(FDB *self, void *closure)
 
     path = tcfdbpath(self->fdb);
     if (path) {
-        return Py_BuildValue("s", path);
+        return PyString_FromString(path);
     }
     Py_RETURN_NONE;
 }
