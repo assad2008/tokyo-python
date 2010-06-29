@@ -183,7 +183,7 @@ RTDBQuery_count(RTDBQuery *self)
     Py_BEGIN_ALLOW_THREADS
     count = tcrdbqrysearchcount(self->rqry);
     Py_END_ALLOW_THREADS
-    return Py_BuildValue("i", count);
+    return PyInt_FromLong((long)count);
 }
 
 
@@ -206,7 +206,7 @@ PyDoc_STRVAR(RTDBQuery_hint_doc,
 static PyObject *
 RTDBQuery_hint_get(RTDBQuery *self, void *closure)
 {
-    return Py_BuildValue("s", tcrdbqryhint(self->rqry));
+    return PyString_FromString(tcrdbqryhint(self->rqry));
 }
 
 

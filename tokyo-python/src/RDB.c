@@ -357,7 +357,7 @@ RDB_addint(RDB *self, PyObject *args)
         }
     }
     rdbbase->changed = true;
-    return Py_BuildValue("i", result);
+    return PyInt_FromLong((long)result);
 }
 
 

@@ -274,7 +274,7 @@ PyDoc_STRVAR(TDBQuery_count_doc,
 static PyObject *
 TDBQuery_count(TDBQuery *self)
 {
-    return Py_BuildValue("i", tctdbqrycount(self->qry));
+    return PyInt_FromLong((long)tctdbqrycount(self->qry));
 }
 
 
@@ -299,7 +299,7 @@ PyDoc_STRVAR(TDBQuery_hint_doc,
 static PyObject *
 TDBQuery_hint_get(TDBQuery *self, void *closure)
 {
-    return Py_BuildValue("s", tctdbqryhint(self->qry));
+    return PyString_FromString(tctdbqryhint(self->qry));
 }
 
 
@@ -1194,7 +1194,7 @@ TDB_path_get(TDB *self, void *closure)
 
     path = tctdbpath(self->tdb);
     if (path) {
-        return Py_BuildValue("s", path);
+        return PyString_FromString(path);
     }
     Py_RETURN_NONE;
 }

@@ -158,7 +158,7 @@ Returns the version string of the underlying Tokyo Cabinet library.");
 static PyObject *
 cabinet_version(PyObject *module)
 {
-    return Py_BuildValue("s", tcversion);
+    return PyString_FromString(tcversion);
 }
 
 

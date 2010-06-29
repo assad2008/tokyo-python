@@ -918,7 +918,7 @@ HDB_addint(HDB *self, PyObject *args)
         return set_hdb_error(self->hdb, key);
     }
     self->changed = true;
-    return Py_BuildValue("i", result);
+    return PyInt_FromLong((long)result);
 }
 
 
@@ -1043,7 +1043,7 @@ HDB_path_get(HDB *self, void *closure)
 
     path = tchdbpath(self->hdb);
     if (path) {
-        return Py_BuildValue("s", path);
+        return PyString_FromString(path);
     }
     Py_RETURN_NONE;
 }
