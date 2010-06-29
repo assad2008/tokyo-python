@@ -387,17 +387,6 @@ HDB_tp_iter(HDB *self)
 }
 
 
-/* HDB.__length_hint__ */
-PyDoc_STRVAR(HDB_length_hint_doc,
-"Private method returning an estimate of len(list(hdb)).");
-
-static PyObject *
-HDB_length_hint(HDB *self)
-{
-    return PyLong_FromSsize_t(HDB_Length(self));
-}
-
-
 /* HDB.open(path, mode) */
 PyDoc_STRVAR(HDB_open_doc,
 "open(path, mode)\n\
@@ -962,7 +951,7 @@ HDB_adddouble(HDB *self, PyObject *args)
 PyDoc_STRVAR(HDB_iterkeys_doc,
 "iterkeys()\n\
 \n\
-Return an iterator over the database’s keys.");
+Return an iterator over the database's keys.");
 
 static PyObject *
 HDB_iterkeys(HDB *self)
@@ -975,7 +964,7 @@ HDB_iterkeys(HDB *self)
 PyDoc_STRVAR(HDB_itervalues_doc,
 "itervalues()\n\
 \n\
-Return an iterator over the database’s values.");
+Return an iterator over the database's values.");
 
 static PyObject *
 HDB_itervalues(HDB *self)
@@ -988,7 +977,7 @@ HDB_itervalues(HDB *self)
 PyDoc_STRVAR(HDB_iteritems_doc,
 "iteritems()\n\
 \n\
-Return an iterator over the database’s items.");
+Return an iterator over the database's items.");
 
 static PyObject *
 HDB_iteritems(HDB *self)
@@ -999,8 +988,6 @@ HDB_iteritems(HDB *self)
 
 /* HDBType.tp_methods */
 static PyMethodDef HDB_tp_methods[] = {
-    {"__length_hint__", (PyCFunction)HDB_length_hint, METH_NOARGS,
-     HDB_length_hint_doc},
     {"open", (PyCFunction)HDB_open, METH_VARARGS, HDB_open_doc},
     {"close", (PyCFunction)HDB_close, METH_NOARGS, HDB_close_doc},
     {"clear", (PyCFunction)HDB_clear, METH_NOARGS, HDB_clear_doc},

@@ -580,6 +580,126 @@ static PyTypeObject TDBIterItemsType = {
 };
 
 
+/* TDBIterValuesKeysType.tp_iternext */
+static PyObject *
+TDBIterValuesKeys_tp_iternext(DBIter *self)
+{
+    TDB *tdb = (TDB *)self->db;
+    TCMAP *value;
+    TCLIST *valuekeys;
+    PyObject *pyvaluekeys;
+
+    if (tdb->changed) {
+        return set_error(Error, "TDB changed during iteration");
+    }
+    value = pytctdbiternext3(tdb->tdb);
+    if (!value) {
+        if (tctdbecode(tdb->tdb) == TCENOREC) {
+            return set_stopiteration_error();
+        }
+        return set_tdb_error(tdb->tdb, NULL);
+    }
+    valuekeys = tcmapkeys(value);
+    pyvaluekeys = tclist_to_tuple(valuekeys);
+    tcmapdel(value);
+    tclistdel(valuekeys);
+    return pyvaluekeys;
+}
+
+
+/* TDBIterValuesKeysType */
+static PyTypeObject TDBIterValuesKeysType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.TDBIterValuesKeys",        /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)TDBIterValuesKeys_tp_iternext, /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* TDBIterValuesValsType.tp_iternext */
+static PyObject *
+TDBIterValuesVals_tp_iternext(DBIter *self)
+{
+    TDB *tdb = (TDB *)self->db;
+    TCMAP *value;
+    TCLIST *valuevals;
+    PyObject *pyvaluevals;
+
+    if (tdb->changed) {
+        return set_error(Error, "TDB changed during iteration");
+    }
+    value = pytctdbiternext3(tdb->tdb);
+    if (!value) {
+        if (tctdbecode(tdb->tdb) == TCENOREC) {
+            return set_stopiteration_error();
+        }
+        return set_tdb_error(tdb->tdb, NULL);
+    }
+    valuevals = tcmapvals(value);
+    pyvaluevals = tclist_to_tuple(valuevals);
+    tcmapdel(value);
+    tclistdel(valuevals);
+    return pyvaluevals;
+}
+
+
+/* TDBIterValuesValsType */
+static PyTypeObject TDBIterValuesValsType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.TDBIterValuesVals",        /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)TDBIterValuesVals_tp_iternext, /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
 /*******************************************************************************
 * TDBType
 *******************************************************************************/
@@ -744,17 +864,6 @@ static PyObject *
 TDB_tp_iter(TDB *self)
 {
     return new_TDBIter(self, &TDBIterKeysType);
-}
-
-
-/* TDB.__length_hint__ */
-PyDoc_STRVAR(TDB_length_hint_doc,
-"Private method returning an estimate of len(list(tdb)).");
-
-static PyObject *
-TDB_length_hint(TDB *self)
-{
-    return PyLong_FromSsize_t(TDB_Length(self));
 }
 
 
@@ -1358,7 +1467,7 @@ TDB_metasearch(TDB *notused, PyObject *args)
 PyDoc_STRVAR(TDB_iterkeys_doc,
 "iterkeys()\n\
 \n\
-Return an iterator over the database’s keys.");
+Return an iterator over the database's keys.");
 
 static PyObject *
 TDB_iterkeys(TDB *self)
@@ -1371,7 +1480,7 @@ TDB_iterkeys(TDB *self)
 PyDoc_STRVAR(TDB_itervalues_doc,
 "itervalues()\n\
 \n\
-Return an iterator over the database’s values.");
+Return an iterator over the database's values.");
 
 static PyObject *
 TDB_itervalues(TDB *self)
@@ -1384,7 +1493,7 @@ TDB_itervalues(TDB *self)
 PyDoc_STRVAR(TDB_iteritems_doc,
 "iteritems()\n\
 \n\
-Return an iterator over the database’s items.");
+Return an iterator over the database's items.");
 
 static PyObject *
 TDB_iteritems(TDB *self)
@@ -1393,10 +1502,34 @@ TDB_iteritems(TDB *self)
 }
 
 
+/* TDB.itervalueskeys() */
+PyDoc_STRVAR(TDB_itervalueskeys_doc,
+"itervalueskeys()\n\
+\n\
+Return an iterator over the database's values' keys.");
+
+static PyObject *
+TDB_itervalueskeys(TDB *self)
+{
+    return new_TDBIter(self, &TDBIterValuesKeysType);
+}
+
+
+/* TDB.itervaluesvals() */
+PyDoc_STRVAR(TDB_itervaluesvals_doc,
+"itervaluesvals()\n\
+\n\
+Return an iterator over the database's values' values.");
+
+static PyObject *
+TDB_itervaluesvals(TDB *self)
+{
+    return new_TDBIter(self, &TDBIterValuesValsType);
+}
+
+
 /* TDBType.tp_methods */
 static PyMethodDef TDB_tp_methods[] = {
-    {"__length_hint__", (PyCFunction)TDB_length_hint, METH_NOARGS,
-     TDB_length_hint_doc},
     {"open", (PyCFunction)TDB_open, METH_VARARGS, TDB_open_doc},
     {"close", (PyCFunction)TDB_close, METH_NOARGS, TDB_close_doc},
     {"clear", (PyCFunction)TDB_clear, METH_NOARGS, TDB_clear_doc},
@@ -1428,6 +1561,10 @@ static PyMethodDef TDB_tp_methods[] = {
     {"iterkeys", (PyCFunction)TDB_iterkeys, METH_NOARGS, TDB_iterkeys_doc},
     {"itervalues", (PyCFunction)TDB_itervalues, METH_NOARGS, TDB_itervalues_doc},
     {"iteritems", (PyCFunction)TDB_iteritems, METH_NOARGS, TDB_iteritems_doc},
+    {"itervalueskeys", (PyCFunction)TDB_itervalueskeys, METH_NOARGS,
+     TDB_itervalueskeys_doc},
+    {"itervaluesvals", (PyCFunction)TDB_itervaluesvals, METH_NOARGS,
+     TDB_itervaluesvals_doc},
     {NULL}  /* Sentinel */
 };
 

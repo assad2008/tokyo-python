@@ -202,7 +202,9 @@ init_cabinet(void)
         PyType_Ready(&TDBQueryType) ||
         PyType_Ready(&TDBIterKeysType) ||
         PyType_Ready(&TDBIterValuesType) ||
-        PyType_Ready(&TDBIterItemsType)
+        PyType_Ready(&TDBIterItemsType) ||
+        PyType_Ready(&TDBIterValuesKeysType) ||
+        PyType_Ready(&TDBIterValuesValsType)
        ) {
         return NULL;
     }
