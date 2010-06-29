@@ -16,6 +16,216 @@ set_hdb_error(TCHDB *hdb, const char *key)
 
 
 /*******************************************************************************
+* HDB iterator types
+*******************************************************************************/
+
+/* new_HDBIter */
+static PyObject *
+new_HDBIter(HDB *self, PyTypeObject *type)
+{
+    PyObject *iter = DBIter_tp_new(type, (PyObject *)self);
+    if (!iter) {
+        return NULL;
+    }
+    if (!tchdbiterinit(self->hdb)) {
+        Py_DECREF(iter);
+        return set_hdb_error(self->hdb, NULL);
+    }
+    self->changed = false;
+    return iter;
+}
+
+
+/* HDBIterKeysType.tp_iternext */
+static PyObject *
+HDBIterKeys_tp_iternext(DBIter *self)
+{
+    HDB *hdb = (HDB *)self->db;
+    const char *key;
+    PyObject *pykey;
+
+    if (hdb->changed) {
+        return set_error(Error, "HDB changed during iteration");
+    }
+    key = tchdbiternext2(hdb->hdb);
+    if (!key) {
+        if (tchdbecode(hdb->hdb) == TCENOREC) {
+            return set_stopiteration_error();
+        }
+        return set_hdb_error(hdb->hdb, NULL);
+    }
+    pykey = PyBytes_FromString(key);
+    tcfree((void *)key);
+    return pykey;
+}
+
+
+/* HDBIterKeysType */
+static PyTypeObject HDBIterKeysType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.HDBIterKeys",              /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)HDBIterKeys_tp_iternext,    /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* HDBIterValuesType.tp_iternext */
+static PyObject *
+HDBIterValues_tp_iternext(DBIter *self)
+{
+    HDB *hdb = (HDB *)self->db;
+    TCXSTR *key, *value;
+    PyObject *pyvalue = NULL;
+
+    if (hdb->changed) {
+        return set_error(Error, "HDB changed during iteration");
+    }
+    key = tcxstrnew();
+    value = tcxstrnew();
+    if (!tchdbiternext3(hdb->hdb, key, value)) {
+        if (tchdbecode(hdb->hdb) == TCENOREC) {
+            set_stopiteration_error();
+        }
+        else {
+            set_hdb_error(hdb->hdb, NULL);
+        }
+    }
+    else {
+        pyvalue = PyBytes_FromString((char *)tcxstrptr(value));
+    }
+    tcxstrdel(key);
+    tcxstrdel(value);
+    return pyvalue;
+}
+
+
+/* HDBIterValuesType */
+static PyTypeObject HDBIterValuesType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.HDBIterValues",            /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)HDBIterValues_tp_iternext,  /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* HDBIterItemsType.tp_iternext */
+static PyObject *
+HDBIterItems_tp_iternext(DBIter *self)
+{
+    HDB *hdb = (HDB *)self->db;
+    TCXSTR *key, *value;
+    PyObject *pykey, *pyvalue, *pyresult = NULL;
+
+    if (hdb->changed) {
+        return set_error(Error, "HDB changed during iteration");
+    }
+    key = tcxstrnew();
+    value = tcxstrnew();
+    if (!tchdbiternext3(hdb->hdb, key, value)) {
+        if (tchdbecode(hdb->hdb) == TCENOREC) {
+            set_stopiteration_error();
+        }
+        else {
+            set_hdb_error(hdb->hdb, NULL);
+        }
+    }
+    else {
+        pykey = PyBytes_FromString((char *)tcxstrptr(key));
+        pyvalue = PyBytes_FromString((char *)tcxstrptr(value));
+        if (pykey && pyvalue) {
+            pyresult = PyTuple_Pack(2, pykey, pyvalue);
+        }
+        Py_XDECREF(pykey);
+        Py_XDECREF(pyvalue);
+    }
+    tcxstrdel(key);
+    tcxstrdel(value);
+    return pyresult;
+}
+
+
+/* HDBIterItemsType */
+static PyTypeObject HDBIterItemsType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.HDBIterItems",             /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)HDBIterItems_tp_iternext,   /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/*******************************************************************************
 * HDBType
 *******************************************************************************/
 
@@ -173,35 +383,7 @@ static PyMappingMethods HDB_tp_as_mapping = {
 static PyObject *
 HDB_tp_iter(HDB *self)
 {
-    if (!tchdbiterinit(self->hdb)) {
-        return set_hdb_error(self->hdb, NULL);
-    }
-    self->changed = false;
-    Py_INCREF(self);
-    return (PyObject *)self;
-}
-
-
-/* HDBType.tp_iternext */
-static PyObject *
-HDB_tp_iternext(HDB *self)
-{
-    const char *key;
-    PyObject *pykey;
-
-    if (self->changed) {
-        return set_error(Error, "HDB changed during iteration");
-    }
-    key = tchdbiternext2(self->hdb);
-    if (!key) {
-        if (tchdbecode(self->hdb) == TCENOREC) {
-            return set_stopiteration_error();
-        }
-        return set_hdb_error(self->hdb, NULL);
-    }
-    pykey = PyBytes_FromString(key);
-    tcfree((void *)key);
-    return pykey;
+    return new_HDBIter(self, &HDBIterKeysType);
 }
 
 
@@ -776,6 +958,45 @@ HDB_adddouble(HDB *self, PyObject *args)
 }
 
 
+/* HDB.iterkeys() */
+PyDoc_STRVAR(HDB_iterkeys_doc,
+"iterkeys()\n\
+\n\
+Return an iterator over the database’s keys.");
+
+static PyObject *
+HDB_iterkeys(HDB *self)
+{
+    return new_HDBIter(self, &HDBIterKeysType);
+}
+
+
+/* HDB.itervalues() */
+PyDoc_STRVAR(HDB_itervalues_doc,
+"itervalues()\n\
+\n\
+Return an iterator over the database’s values.");
+
+static PyObject *
+HDB_itervalues(HDB *self)
+{
+    return new_HDBIter(self, &HDBIterValuesType);
+}
+
+
+/* HDB.iteritems() */
+PyDoc_STRVAR(HDB_iteritems_doc,
+"iteritems()\n\
+\n\
+Return an iterator over the database’s items.");
+
+static PyObject *
+HDB_iteritems(HDB *self)
+{
+    return new_HDBIter(self, &HDBIterItemsType);
+}
+
+
 /* HDBType.tp_methods */
 static PyMethodDef HDB_tp_methods[] = {
     {"__length_hint__", (PyCFunction)HDB_length_hint, METH_NOARGS,
@@ -804,6 +1025,9 @@ static PyMethodDef HDB_tp_methods[] = {
     {"setdfunit", (PyCFunction)HDB_setdfunit, METH_VARARGS, HDB_setdfunit_doc},
     {"addint", (PyCFunction)HDB_addint, METH_VARARGS, HDB_addint_doc},
     {"adddouble", (PyCFunction)HDB_adddouble, METH_VARARGS, HDB_adddouble_doc},
+    {"iterkeys", (PyCFunction)HDB_iterkeys, METH_NOARGS, HDB_iterkeys_doc},
+    {"itervalues", (PyCFunction)HDB_itervalues, METH_NOARGS, HDB_itervalues_doc},
+    {"iteritems", (PyCFunction)HDB_iteritems, METH_NOARGS, HDB_iteritems_doc},
     {NULL}  /* Sentinel */
 };
 
@@ -872,7 +1096,7 @@ static PyTypeObject HDBType = {
     0,                                        /*tp_richcompare*/
     0,                                        /*tp_weaklistoffset*/
     (getiterfunc)HDB_tp_iter,                 /*tp_iter*/
-    (iternextfunc)HDB_tp_iternext,            /*tp_iternext*/
+    0,                                        /*tp_iternext*/
     HDB_tp_methods,                           /*tp_methods*/
     0,                                        /*tp_members*/
     HDB_tp_getsets,                           /*tp_getsets*/

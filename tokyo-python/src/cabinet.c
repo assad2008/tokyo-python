@@ -190,6 +190,9 @@ init_cabinet(void)
     /* checking types */
     if (
         PyType_Ready(&HDBType) ||
+        PyType_Ready(&HDBIterKeysType) ||
+        PyType_Ready(&HDBIterValuesType) ||
+        PyType_Ready(&HDBIterItemsType) ||
         PyType_Ready(&MDBType) ||
         PyType_Ready(&BDBType) ||
         PyType_Ready(&BDBCursorType) ||
