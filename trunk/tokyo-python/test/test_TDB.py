@@ -133,6 +133,20 @@ class TDBTestIter(TDBTest):
                           b"c": {b"test": b"c"}},
                          dict(self.db.iteritems()))
 
+    def test_itervalueskeys(self):
+        self.db[b"a"] = {b"test": b"a", b"a": b"1"}
+        self.db[b"b"] = {b"test": b"b", b"b": b"2"}
+        self.db[b"c"] = {b"test": b"c", b"c": b"3"}
+        self.assertEqual([(b"test", b"a"), (b"test", b"b"), (b"test", b"c")],
+                         list(self.db.itervalueskeys()))
+
+    def test_itervaluesvals(self):
+        self.db[b"a"] = {b"test": b"a", b"a": b"1"}
+        self.db[b"b"] = {b"test": b"b", b"b": b"2"}
+        self.db[b"c"] = {b"test": b"c", b"c": b"3"}
+        self.assertEqual([(b"a", b"1"), (b"b", b"2"), (b"c", b"3")],
+                         list(self.db.itervaluesvals()))
+
 
 class TDBTestPut(TDBTest):
 

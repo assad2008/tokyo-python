@@ -280,21 +280,21 @@ Hash Database --- :class:`HDB`
 
     .. method:: iterkeys
 
-        Return an iterator over the database’s keys.
+        Return an iterator over the database's keys.
 
         .. versionadded:: 0.6.1
 
 
     .. method:: itervalues
 
-        Return an iterator over the database’s values.
+        Return an iterator over the database's values.
 
         .. versionadded:: 0.6.1
 
 
     .. method:: iteritems
 
-        Return an iterator over the database’s items (``(key, value)`` pairs).
+        Return an iterator over the database's items (``(key, value)`` pairs).
 
         .. versionadded:: 0.6.1
 
