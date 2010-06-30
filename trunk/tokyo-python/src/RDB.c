@@ -356,7 +356,9 @@ RDB_addint(RDB *self, PyObject *args)
             return set_rdb_error(rdbbase->rdb, key);
         }
     }
-    rdbbase->changed = true;
+    if (num) {
+        rdbbase->changed = true;
+    }
     return PyInt_FromLong((long)result);
 }
 
@@ -395,7 +397,9 @@ RDB_adddouble(RDB *self, PyObject *args)
     if (Py_IS_NAN(result)) {
         return set_rdb_error(rdbbase->rdb, key);
     }
-    rdbbase->changed = true;
+    if (num) {
+        rdbbase->changed = true;
+    }
     return PyFloat_FromDouble(result);
 }
 
