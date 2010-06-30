@@ -3,20 +3,8 @@ import sys
 import os
 import tempfile
 
-from tokyo.cabinet import (FDBOREADER, FDBOWRITER, FDBOCREAT, FDB as _FDB, Error,
+from tokyo.cabinet import (FDBOREADER, FDBOWRITER, FDBOCREAT, FDB, Error,
                            INT_MAX, INT_MIN)
-
-
-class FDB(_FDB):
-
-    def keys(self):
-        return (key for key in self)
-
-    def values(self):
-        return (self[key] for key in self)
-
-    def items(self):
-        return ((key, self[key]) for key in self)
 
 
 class FDBTest(unittest.TestCase):
@@ -73,15 +61,15 @@ class FDBTestDict(FDBTest):
         self.db[1] = b"a"
         self.db[2] = b"b"
         self.assertEqual(len(self.db), 2)
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {1: b"a", 2: b"b"})
         self.db[3] = b"c"
         self.db[1] = b"d"
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {1: b"d", 2: b"b", 3: b"c"})
         del self.db[2]
         self.assertEqual(len(self.db), 2)
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {1: b"d", 3: b"c"})
 
     def test_clear(self):
@@ -90,21 +78,19 @@ class FDBTestDict(FDBTest):
         self.assertEqual(len(self.db), 2)
         self.db.clear()
         self.assertEqual(len(self.db), 0)
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {})
 
 
 class FDBTestIter(FDBTest):
 
     def test_iter(self):
-        i = iter(self.db)
-        self.assertEqual(len(i), 0)
         self.db[1] = b"a"
         self.db[2] = b"b"
         self.db[3] = b"c"
         i = iter(self.db)
-        self.assertEqual(len(i), len(self.db))
         self.assertTrue(1 in i)
+        i = iter(self.db)
         self.assertEqual([1, 2, 3], sorted(i))
         i = iter(self.db)
         a = next(i)
@@ -113,12 +99,36 @@ class FDBTestIter(FDBTest):
         self.assertRaises(StopIteration, next, i)
         self.assertEqual([1, 2, 3], sorted((a, b, c)))
         i = iter(self.db)
-        self.assertEqual(len(i), 3)
         a = next(i)
         del self.db[2]
-        self.db[4] = b"d"
-        self.assertEqual(len(i), 3)
         self.assertRaises(Error, next, i)
+        i = iter(self.db)
+        a = next(i)
+        self.db[4] = b"d"
+        self.assertRaises(Error, next, i)
+        i = iter(self.db)
+        a = next(i)
+        del self.db[4]
+        self.db[4] = b"e"
+        self.assertRaises(Error, next, i)
+
+    def test_iterkeys(self):
+        self.db[1] = b"a"
+        self.db[2] = b"b"
+        self.db[3] = b"c"
+        self.assertEqual([1, 2, 3], sorted(list(self.db.iterkeys())))
+
+    def test_itervalues(self):
+        self.db[1] = b"a"
+        self.db[2] = b"b"
+        self.db[3] = b"c"
+        self.assertEqual([b"a", b"b", b"c"], sorted(list(self.db.itervalues())))
+
+    def test_iteritems(self):
+        self.db[1] = b"a"
+        self.db[2] = b"b"
+        self.db[3] = b"c"
+        self.assertEqual({1: b"a", 2: b"b", 3: b"c"}, dict(self.db.iteritems()))
 
 
 class FDBTestPut(FDBTest):

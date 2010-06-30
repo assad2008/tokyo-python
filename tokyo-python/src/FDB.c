@@ -44,6 +44,209 @@ ids_to_frozenset(uint64_t *result, int result_size)
 
 
 /*******************************************************************************
+* FDB iterator types
+*******************************************************************************/
+
+/* new_FDBIter */
+static PyObject *
+new_FDBIter(FDB *self, PyTypeObject *type)
+{
+    PyObject *iter = DBIter_tp_new(type, (PyObject *)self);
+    if (!iter) {
+        return NULL;
+    }
+    if (!tcfdbiterinit(self->fdb)) {
+        Py_DECREF(iter);
+        return set_fdb_error(self->fdb, 0);
+    }
+    self->changed = false;
+    return iter;
+}
+
+
+/* FDBIterKeysType.tp_iternext */
+static PyObject *
+FDBIterKeys_tp_iternext(DBIter *self)
+{
+    FDB *fdb = (FDB *)self->db;
+    long long key;
+    PyObject *pykey;
+
+    if (fdb->changed) {
+        return set_error(Error, "FDB changed during iteration");
+    }
+    key = (long long)tcfdbiternext(fdb->fdb);
+    if (!key) {
+        if (tcfdbecode(fdb->fdb) == TCENOREC) {
+            return set_stopiteration_error();
+        }
+        return set_fdb_error(fdb->fdb, 0);
+    }
+    pykey = PyLong_FromLongLong(key);
+    return pykey;
+}
+
+
+/* FDBIterKeysType */
+static PyTypeObject FDBIterKeysType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.FDBIterKeys",              /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)FDBIterKeys_tp_iternext,    /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* FDBIterValuesType.tp_iternext */
+static PyObject *
+FDBIterValues_tp_iternext(DBIter *self)
+{
+    FDB *fdb = (FDB *)self->db;
+    long long key;
+    int value_size;
+    const char *value;
+    PyObject *pyvalue;
+
+    if (fdb->changed) {
+        return set_error(Error, "FDB changed during iteration");
+    }
+    key = (long long)tcfdbiternext(fdb->fdb);
+    if (!key) {
+        if (tcfdbecode(fdb->fdb) == TCENOREC) {
+            return set_stopiteration_error();
+        }
+        return set_fdb_error(fdb->fdb, 0);
+    }
+    value = tcfdbget(fdb->fdb, key, &value_size);
+    pyvalue = PyBytes_FromStringAndSize(value, (Py_ssize_t)value_size);
+    tcfree((void *)value);
+    return pyvalue;
+}
+
+
+/* FDBIterValuesType */
+static PyTypeObject FDBIterValuesType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.FDBIterValues",            /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)FDBIterValues_tp_iternext,  /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* FDBIterItemsType.tp_iternext */
+static PyObject *
+FDBIterItems_tp_iternext(DBIter *self)
+{
+    FDB *fdb = (FDB *)self->db;
+    long long key;
+    int value_size;
+    const char *value;
+    PyObject *pykey, *pyvalue, *pyresult = NULL;
+
+    if (fdb->changed) {
+        return set_error(Error, "FDB changed during iteration");
+    }
+    key = (long long)tcfdbiternext(fdb->fdb);
+    if (!key) {
+        if (tcfdbecode(fdb->fdb) == TCENOREC) {
+            return set_stopiteration_error();
+        }
+        return set_fdb_error(fdb->fdb, 0);
+    }
+    value = tcfdbget(fdb->fdb, key, &value_size);
+    pykey = PyLong_FromLongLong(key);
+    pyvalue = PyBytes_FromStringAndSize(value, (Py_ssize_t)value_size);
+    if (pykey && pyvalue) {
+        pyresult = PyTuple_Pack(2, pykey, pyvalue);
+    }
+    Py_XDECREF(pykey);
+    Py_XDECREF(pyvalue);
+    tcfree((void *)value);
+    return pyresult;
+}
+
+
+/* FDBIterItemsType */
+static PyTypeObject FDBIterItemsType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.FDBIterItems",             /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)FDBIterItems_tp_iternext,   /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/*******************************************************************************
 * FDBType
 *******************************************************************************/
 
@@ -206,45 +409,7 @@ static PyMappingMethods FDB_tp_as_mapping = {
 static PyObject *
 FDB_tp_iter(FDB *self)
 {
-    if (!tcfdbiterinit(self->fdb)) {
-        return set_fdb_error(self->fdb, 0);
-    }
-    self->changed = false;
-    Py_INCREF(self);
-    return (PyObject *)self;
-}
-
-
-/* FDBType.tp_iternext */
-static PyObject *
-FDB_tp_iternext(FDB *self)
-{
-    unsigned long long key;
-    PyObject *pykey;
-
-    if (self->changed) {
-        return set_error(Error, "FDB changed during iteration");
-    }
-    key = tcfdbiternext(self->fdb);
-    if (!key) {
-        if (tcfdbecode(self->fdb) == TCENOREC) {
-            return set_stopiteration_error();
-        }
-        return set_fdb_error(self->fdb, 0);
-    }
-    pykey = PyLong_FromUnsignedLongLong(key);
-    return pykey;
-}
-
-
-/* FDB.__length_hint__ */
-PyDoc_STRVAR(FDB_length_hint_doc,
-"Private method returning an estimate of len(list(fdb)).");
-
-static PyObject *
-FDB_length_hint(FDB *self)
-{
-    return PyLong_FromSsize_t(FDB_Length(self));
+    return new_FDBIter(self, &FDBIterKeysType);
 }
 
 
@@ -675,10 +840,47 @@ FDB_adddouble(FDB *self, PyObject *args)
 }
 
 
+/* FDB.iterkeys() */
+PyDoc_STRVAR(FDB_iterkeys_doc,
+"iterkeys()\n\
+\n\
+Return an iterator over the database's keys.");
+
+static PyObject *
+FDB_iterkeys(FDB *self)
+{
+    return new_FDBIter(self, &FDBIterKeysType);
+}
+
+
+/* FDB.itervalues() */
+PyDoc_STRVAR(FDB_itervalues_doc,
+"itervalues()\n\
+\n\
+Return an iterator over the database's values.");
+
+static PyObject *
+FDB_itervalues(FDB *self)
+{
+    return new_FDBIter(self, &FDBIterValuesType);
+}
+
+
+/* FDB.iteritems() */
+PyDoc_STRVAR(FDB_iteritems_doc,
+"iteritems()\n\
+\n\
+Return an iterator over the database's items.");
+
+static PyObject *
+FDB_iteritems(FDB *self)
+{
+    return new_FDBIter(self, &FDBIterItemsType);
+}
+
+
 /* FDBType.tp_methods */
 static PyMethodDef FDB_tp_methods[] = {
-    {"__length_hint__", (PyCFunction)FDB_length_hint, METH_NOARGS,
-     FDB_length_hint_doc},
     {"open", (PyCFunction)FDB_open, METH_VARARGS, FDB_open_doc},
     {"close", (PyCFunction)FDB_close, METH_NOARGS, FDB_close_doc},
     {"clear", (PyCFunction)FDB_clear, METH_NOARGS, FDB_clear_doc},
@@ -699,6 +901,9 @@ static PyMethodDef FDB_tp_methods[] = {
     {"tune", (PyCFunction)FDB_tune, METH_VARARGS, FDB_tune_doc},
     {"addint", (PyCFunction)FDB_addint, METH_VARARGS, FDB_addint_doc},
     {"adddouble", (PyCFunction)FDB_adddouble, METH_VARARGS, FDB_adddouble_doc},
+    {"iterkeys", (PyCFunction)FDB_iterkeys, METH_NOARGS, FDB_iterkeys_doc},
+    {"itervalues", (PyCFunction)FDB_itervalues, METH_NOARGS, FDB_itervalues_doc},
+    {"iteritems", (PyCFunction)FDB_iteritems, METH_NOARGS, FDB_iteritems_doc},
     {NULL}  /* Sentinel */
 };
 
@@ -767,7 +972,7 @@ static PyTypeObject FDBType = {
     0,                                        /*tp_richcompare*/
     0,                                        /*tp_weaklistoffset*/
     (getiterfunc)FDB_tp_iter,                 /*tp_iter*/
-    (iternextfunc)FDB_tp_iternext,            /*tp_iternext*/
+    0,                                        /*tp_iternext*/
     FDB_tp_methods,                           /*tp_methods*/
     0,                                        /*tp_members*/
     FDB_tp_getsets,                           /*tp_getsets*/

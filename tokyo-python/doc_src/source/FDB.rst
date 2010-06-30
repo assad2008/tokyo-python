@@ -236,6 +236,27 @@ Fixed-length Database --- :class:`FDB`
         Flush modifications to the database file.
 
 
+    .. method:: iterkeys
+
+        Return an iterator over the database's keys.
+
+        .. versionadded:: 0.6.1
+
+
+    .. method:: itervalues
+
+        Return an iterator over the database's values.
+
+        .. versionadded:: 0.6.1
+
+
+    .. method:: iteritems
+
+        Return an iterator over the database's items (``(key, value)`` pairs).
+
+        .. versionadded:: 0.6.1
+
+
     .. method:: range([lower=FDBIDMIN[, upper=FDBIDMAX[, max=-1]]])
 
         Return a frozenset of keys. If given, *max* is the maximum number of
@@ -259,28 +280,6 @@ Fixed-length Database --- :class:`FDB`
         .. note::
             Optimizing a read only database, or during a transaction, is an
             invalid operation.
-
-
-    Methods :meth:`keys`, :meth:`values` and :meth:`items` are not yet
-    implemented (mainly because I didn't settle on how to do it: should they
-    return :class:`Iterable`, :class:`Iterator`, :class:`MappingView`, etc.?).
-    Any help would be greatly appreciated in this matter.
-
-    For the time being, for those of you who really need these methods, it's
-    trivial to implement them in python. Here is an example using generators::
-
-        from tokyo.cabinet import FDB as _FDB
-
-        class FDB(_FDB):
-
-            def keys(self):
-                return (key for key in self)
-
-            def values(self):
-                return (self[key] for key in self)
-
-            def items(self):
-                return ((key, self[key]) for key in self)
 
 
     .. attribute:: path
