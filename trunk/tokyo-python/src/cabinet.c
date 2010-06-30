@@ -196,6 +196,9 @@ init_cabinet(void)
         PyType_Ready(&MDBType) ||
         PyType_Ready(&BDBType) ||
         PyType_Ready(&BDBCursorType) ||
+        PyType_Ready(&BDBIterKeysType) ||
+        PyType_Ready(&BDBIterValuesType) ||
+        PyType_Ready(&BDBIterItemsType) ||
         PyType_Ready(&NDBType) ||
         PyType_Ready(&FDBType) ||
         PyType_Ready(&TDBType) ||

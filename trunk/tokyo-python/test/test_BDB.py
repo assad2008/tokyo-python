@@ -3,33 +3,8 @@ import sys
 import os
 import tempfile
 
-from tokyo.cabinet import (BDBOREADER, BDBOWRITER, BDBOCREAT, BDB as _BDB,
+from tokyo.cabinet import (BDBOREADER, BDBOWRITER, BDBOCREAT, BDB,
                            BDBCPBEFORE, BDBCPAFTER, Error, INT_MAX, INT_MIN)
-
-
-class BDB(_BDB):
-
-    def keys(self):
-        c = self.cursor()
-        c.first()
-        while True:
-            yield c.key()
-            c.next()
-
-    def values(self):
-        c = self.cursor()
-        c.first()
-        while True:
-            yield c.value()
-            c.next()
-
-    def items(self):
-        c = self.cursor()
-        c.first()
-        while True:
-            yield c.item()
-            c.next()
-
 
 
 class BDBTest(unittest.TestCase):
@@ -85,15 +60,15 @@ class BDBTestDict(BDBTest):
         self.db[b"a"] = b"1"
         self.db[b"b"] = b"2"
         self.assertEqual(len(self.db), 2)
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {b"a": b"1", b"b": b"2"})
         self.db[b"c"] = b"3"
         self.db[b"a"] = b"4"
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {b"a": b"4", b"b": b"2", b"c": b"3"})
         del self.db[b"b"]
         self.assertEqual(len(self.db), 2)
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {b"a": b"4", b"c": b"3"})
 
     def test_clear(self):
@@ -102,21 +77,19 @@ class BDBTestDict(BDBTest):
         self.assertEqual(len(self.db), 2)
         self.db.clear()
         self.assertEqual(len(self.db), 0)
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {})
 
 
 class BDBTestIter(BDBTest):
 
     def test_iter(self):
-        i = iter(self.db)
-        self.assertEqual(len(i), 0)
         self.db[b"a"] = b"1"
         self.db[b"b"] = b"2"
         self.db[b"c"] = b"3"
         i = iter(self.db)
-        self.assertEqual(len(i), len(self.db))
         self.assertTrue(b"a" in i)
+        i = iter(self.db)
         self.assertEqual([b"a", b"b", b"c"], sorted(i))
         i = iter(self.db)
         a = next(i)
@@ -125,12 +98,39 @@ class BDBTestIter(BDBTest):
         self.assertRaises(StopIteration, next, i)
         self.assertEqual([b"a", b"b", b"c"], sorted((a, b, c)))
         i = iter(self.db)
-        self.assertEqual(len(i), 3)
         a = next(i)
         del self.db[b"b"]
-        self.db[b"d"] = b"4"
-        self.assertEqual(len(i), 3)
         self.assertRaises(Error, next, i)
+        i = iter(self.db)
+        a = next(i)
+        self.db[b"d"] = b"4"
+        self.assertRaises(Error, next, i)
+        i = iter(self.db)
+        a = next(i)
+        del self.db[b"d"]
+        self.db[b"d"] = b"5"
+        self.assertRaises(Error, next, i)
+
+    def test_iterkeys(self):
+        self.db[b"a"] = b"1"
+        self.db[b"b"] = b"2"
+        self.db[b"c"] = b"3"
+        self.assertEqual([b"a", b"b", b"c"],
+                         sorted(list(self.db.iterkeys())))
+
+    def test_itervalues(self):
+        self.db[b"a"] = b"1"
+        self.db[b"b"] = b"2"
+        self.db[b"c"] = b"3"
+        self.assertEqual([b"1", b"2", b"3"],
+                         sorted(list(self.db.itervalues())))
+
+    def test_iteritems(self):
+        self.db[b"a"] = b"1"
+        self.db[b"b"] = b"2"
+        self.db[b"c"] = b"3"
+        self.assertEqual({b"a": b"1", b"b": b"2", b"c": b"3"},
+                         dict(self.db.iteritems()))
 
 
 class BDBTestPut(BDBTest):
@@ -309,9 +309,9 @@ class BDBTestCursor(BDBTest):
 
     def test_basic(self):
         self.db.putdup(b"a", [b"1", b"2"])
-        self.assertEqual(tuple(self.db.keys()), (b"a", b"a"))
-        self.assertEqual(tuple(self.db.values()), (b"1", b"2"))
-        self.assertEqual(tuple(self.db.items()), ((b"a", b"1"), (b"a", b"2")))
+        self.assertEqual(tuple(self.db.iterkeys()), (b"a", b"a"))
+        self.assertEqual(tuple(self.db.itervalues()), (b"1", b"2"))
+        self.assertEqual(tuple(self.db.iteritems()), ((b"a", b"1"), (b"a", b"2")))
 
     def test_first_next(self):
         c = self.db.cursor()

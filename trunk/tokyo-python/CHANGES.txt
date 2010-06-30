@@ -24,7 +24,7 @@ Release 0.6.1
 
 - changed attribute RTDBQuery.count to method RTDBQuery.count()
 - added method TDBQuery.count() - `Issue 2 <http://code.google.com/p/tokyo-python/issues/detail?id=2>`_ fixed
-- added iter[keys/values/items] methods to HDB and TDB
+- added iter[keys/values/items] methods to HDB, BDB and TDB
 - added itervalues[keys/vals] methods to TDB
 
 

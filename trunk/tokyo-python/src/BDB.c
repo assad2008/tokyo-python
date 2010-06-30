@@ -387,6 +387,224 @@ static PyTypeObject BDBCursorType = {
 
 
 /*******************************************************************************
+* BDB iterator types
+*******************************************************************************/
+
+/* new_BDBIter */
+static PyObject *
+new_BDBIter(BDB *self, PyTypeObject *type)
+{
+    PyObject *iter = DBIter_tp_new(type, (PyObject *)self);
+    if (!iter) {
+        return NULL;
+    }
+    if (!tcbdbcurfirst(self->cur)) {
+        if (tcbdbecode(self->bdb) != TCENOREC) {
+            Py_DECREF(iter);
+            return set_bdb_error(self->bdb, NULL);
+        }
+    }
+    self->changed = false;
+    return iter;
+}
+
+
+/* BDBIterKeysType.tp_iternext */
+static PyObject *
+BDBIterKeys_tp_iternext(DBIter *self)
+{
+    BDB *bdb = (BDB *)self->db;
+    const char *key;
+    PyObject *pykey;
+
+    if (bdb->changed) {
+        return set_error(Error, "BDB changed during iteration");
+    }
+    key = tcbdbcurkey2(bdb->cur);
+    if (!key) {
+        if (tcbdbecode(bdb->bdb) == TCENOREC) {
+            return set_stopiteration_error();
+        }
+        return set_bdb_error(bdb->bdb, NULL);
+    }
+    pykey = PyBytes_FromString(key);
+    tcfree((void *)key);
+    if (!pykey) {
+        return NULL;
+    }
+    tcbdbcurnext(bdb->cur);
+    return pykey;
+}
+
+
+/* BDBIterKeysType */
+static PyTypeObject BDBIterKeysType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.BDBIterKeys",              /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)BDBIterKeys_tp_iternext,    /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* BDBIterValuesType.tp_iternext */
+static PyObject *
+BDBIterValues_tp_iternext(DBIter *self)
+{
+    BDB *bdb = (BDB *)self->db;
+    const char *value;
+    PyObject *pyvalue;
+
+    if (bdb->changed) {
+        return set_error(Error, "BDB changed during iteration");
+    }
+    value = tcbdbcurval2(bdb->cur);
+    if (!value) {
+        if (tcbdbecode(bdb->bdb) == TCENOREC) {
+            return set_stopiteration_error();
+        }
+        return set_bdb_error(bdb->bdb, NULL);
+    }
+    pyvalue = PyBytes_FromString(value);
+    tcfree((void *)value);
+    if (!pyvalue) {
+        return NULL;
+    }
+    tcbdbcurnext(bdb->cur);
+    return pyvalue;
+}
+
+
+/* BDBIterValuesType */
+static PyTypeObject BDBIterValuesType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.BDBIterValues",            /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)BDBIterValues_tp_iternext,  /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* BDBIterItemsType.tp_iternext */
+static PyObject *
+BDBIterItems_tp_iternext(DBIter *self)
+{
+    BDB *bdb = (BDB *)self->db;
+    TCXSTR *key, *value;
+    PyObject *pykey, *pyvalue, *pyresult = NULL;
+
+    if (bdb->changed) {
+        return set_error(Error, "BDB changed during iteration");
+    }
+    key = tcxstrnew();
+    value = tcxstrnew();
+    if (!tcbdbcurrec(bdb->cur, key, value)) {
+        if (tcbdbecode(bdb->bdb) == TCENOREC) {
+            set_stopiteration_error();
+        }
+        else {
+            set_bdb_error(bdb->bdb, NULL);
+        }
+    }
+    else {
+        pykey = PyBytes_FromString((char *)tcxstrptr(key));
+        pyvalue = PyBytes_FromString((char *)tcxstrptr(value));
+        if (pykey && pyvalue) {
+            pyresult = PyTuple_Pack(2, pykey, pyvalue);
+        }
+        Py_XDECREF(pykey);
+        Py_XDECREF(pyvalue);
+    }
+    tcxstrdel(key);
+    tcxstrdel(value);
+    if (!pyresult) {
+        return NULL;
+    }
+    tcbdbcurnext(bdb->cur);
+    return pyresult;
+}
+
+
+/* BDBIterItemsType */
+static PyTypeObject BDBIterItemsType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.BDBIterItems",             /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)BDBIterItems_tp_iternext,   /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/*******************************************************************************
 * BDBType
 *******************************************************************************/
 
@@ -595,49 +813,7 @@ static PyMappingMethods BDB_tp_as_mapping = {
 static PyObject *
 BDB_tp_iter(BDB *self)
 {
-    if (!tcbdbcurfirst(self->cur)) {
-        if (tcbdbecode(self->bdb) != TCENOREC) {
-            return set_bdb_error(self->bdb, NULL);
-        }
-    }
-    self->changed = false;
-    Py_INCREF(self);
-    return (PyObject *)self;
-}
-
-
-/* BDBType.tp_iternext */
-static PyObject *
-BDB_tp_iternext(BDB *self)
-{
-    const char *key;
-    PyObject *pykey;
-
-    if (self->changed) {
-        return set_error(Error, "BDB changed during iteration");
-    }
-    key = tcbdbcurkey2(self->cur);
-    if (!key) {
-        if (tcbdbecode(self->bdb) == TCENOREC) {
-            return set_stopiteration_error();
-        }
-        return set_bdb_error(self->bdb, NULL);
-    }
-    pykey = PyBytes_FromString(key);
-    tcfree((void *)key);
-    tcbdbcurnext(self->cur);
-    return pykey;
-}
-
-
-/* BDB.__length_hint__ */
-PyDoc_STRVAR(BDB_length_hint_doc,
-"Private method returning an estimate of len(list(bdb)).");
-
-static PyObject *
-BDB_length_hint(BDB *self)
-{
-    return PyLong_FromSsize_t(BDB_Length(self));
+    return new_BDBIter(self, &BDBIterKeysType);
 }
 
 
@@ -1399,10 +1575,47 @@ BDB_adddouble(BDB *self, PyObject *args)
 }
 
 
+/* BDB.iterkeys() */
+PyDoc_STRVAR(BDB_iterkeys_doc,
+"iterkeys()\n\
+\n\
+Return an iterator over the database's keys.");
+
+static PyObject *
+BDB_iterkeys(BDB *self)
+{
+    return new_BDBIter(self, &BDBIterKeysType);
+}
+
+
+/* BDB.itervalues() */
+PyDoc_STRVAR(BDB_itervalues_doc,
+"itervalues()\n\
+\n\
+Return an iterator over the database's values.");
+
+static PyObject *
+BDB_itervalues(BDB *self)
+{
+    return new_BDBIter(self, &BDBIterValuesType);
+}
+
+
+/* BDB.iteritems() */
+PyDoc_STRVAR(BDB_iteritems_doc,
+"iteritems()\n\
+\n\
+Return an iterator over the database's items.");
+
+static PyObject *
+BDB_iteritems(BDB *self)
+{
+    return new_BDBIter(self, &BDBIterItemsType);
+}
+
+
 /* BDBType.tp_methods */
 static PyMethodDef BDB_tp_methods[] = {
-    {"__length_hint__", (PyCFunction)BDB_length_hint, METH_NOARGS,
-     BDB_length_hint_doc},
     {"open", (PyCFunction)BDB_open, METH_VARARGS, BDB_open_doc},
     {"close", (PyCFunction)BDB_close, METH_NOARGS, BDB_close_doc},
     {"clear", (PyCFunction)BDB_clear, METH_NOARGS, BDB_clear_doc},
@@ -1432,6 +1645,9 @@ static PyMethodDef BDB_tp_methods[] = {
     {"setcmpfunc", (PyCFunction)BDB_setcmpfunc, METH_VARARGS, BDB_setcmpfunc_doc},
     {"addint", (PyCFunction)BDB_addint, METH_VARARGS, BDB_addint_doc},
     {"adddouble", (PyCFunction)BDB_adddouble, METH_VARARGS, BDB_adddouble_doc},
+    {"iterkeys", (PyCFunction)BDB_iterkeys, METH_NOARGS, BDB_iterkeys_doc},
+    {"itervalues", (PyCFunction)BDB_itervalues, METH_NOARGS, BDB_itervalues_doc},
+    {"iteritems", (PyCFunction)BDB_iteritems, METH_NOARGS, BDB_iteritems_doc},
     {NULL}  /* Sentinel */
 };
 
@@ -1500,7 +1716,7 @@ static PyTypeObject BDBType = {
     0,                                        /*tp_richcompare*/
     0,                                        /*tp_weaklistoffset*/
     (getiterfunc)BDB_tp_iter,                 /*tp_iter*/
-    (iternextfunc)BDB_tp_iternext,            /*tp_iternext*/
+    0,                                        /*tp_iternext*/
     BDB_tp_methods,                           /*tp_methods*/
     0,                                        /*tp_members*/
     BDB_tp_getsets,                           /*tp_getsets*/

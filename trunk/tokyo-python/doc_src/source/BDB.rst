@@ -339,6 +339,27 @@ B+ Tree Database --- :class:`BDB`
         Flush modifications to the database file.
 
 
+    .. method:: iterkeys
+
+        Return an iterator over the database's keys.
+
+        .. versionadded:: 0.6.1
+
+
+    .. method:: itervalues
+
+        Return an iterator over the database's values.
+
+        .. versionadded:: 0.6.1
+
+
+    .. method:: iteritems
+
+        Return an iterator over the database's items (``(key, value)`` pairs).
+
+        .. versionadded:: 0.6.1
+
+
     .. method:: searchkeys(prefix[, max])
 
         Return a frozenset of keys starting with *prefix*. If given, *max* is
@@ -408,41 +429,6 @@ B+ Tree Database --- :class:`BDB`
         .. note::
             Optimizing a read only database, or during a transaction, is an
             invalid operation.
-
-
-    Methods :meth:`keys`, :meth:`values` and :meth:`items` are not yet
-    implemented (mainly because I didn't settle on how to do it: should they
-    return :class:`Iterable`, :class:`Iterator`, :class:`MappingView`, etc.?).
-    Any help would be greatly appreciated in this matter.
-
-    For the time being, for those of you who really need these methods, it's
-    trivial to implement them in python. Here is an example using cursors and
-    generators::
-
-        from tokyo.cabinet import BDB as _BDB
-
-        class BDB(_BDB):
-
-            def keys(self):
-                c = self.cursor()
-                c.first()
-                while True:
-                    yield c.key()
-                    c.next()
-
-            def values(self):
-                c = self.cursor()
-                c.first()
-                while True:
-                    yield c.value()
-                    c.next()
-
-            def items(self):
-                c = self.cursor()
-                c.first()
-                while True:
-                    yield c.item()
-                    c.next()
 
 
     .. attribute:: path
