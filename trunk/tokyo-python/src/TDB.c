@@ -16,8 +16,7 @@ set_tdb_error(TCTDB *tdb, const char *key)
 
 
 /* same as tctdbiternext3 without adding primary key */
-TCMAP *
-pytctdbiternext3(TCTDB *tdb){
+TCMAP *pytctdbiternext3(TCTDB *tdb){
     assert(tdb);
     TCXSTR *kstr = tcxstrnew();
     TCXSTR *vstr = tcxstrnew();
@@ -32,8 +31,7 @@ pytctdbiternext3(TCTDB *tdb){
 
 
 /* same as above but keep the key */
-TCMAP *
-pytctdbiternext4(TCTDB *tdb, TCXSTR *kstr){
+TCMAP *pytctdbiternext4(TCTDB *tdb, TCXSTR *kstr){
     assert(tdb && kstr);
     TCXSTR *vstr = tcxstrnew();
     TCMAP *cols = NULL;
