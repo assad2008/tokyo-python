@@ -1,4 +1,194 @@
 /*******************************************************************************
+* MDB iterator types
+*******************************************************************************/
+
+/* new_MDBIter */
+static PyObject *
+new_MDBIter(MDB *self, PyTypeObject *type)
+{
+    PyObject *iter = DBIter_tp_new(type, (PyObject *)self);
+    if (!iter) {
+        return NULL;
+    }
+    tcmdbiterinit(self->mdb);
+    self->changed = false;
+    return iter;
+}
+
+
+/* MDBIterKeysType.tp_iternext */
+static PyObject *
+MDBIterKeys_tp_iternext(DBIter *self)
+{
+    MDB *mdb = (MDB *)self->db;
+    const char *key;
+    PyObject *pykey;
+
+    if (mdb->changed) {
+        return set_error(Error, "MDB changed during iteration");
+    }
+    key = tcmdbiternext2(mdb->mdb);
+    if (!key) {
+        return set_stopiteration_error();
+    }
+    pykey = PyBytes_FromString(key);
+    tcfree((void *)key);
+    return pykey;
+}
+
+
+/* MDBIterKeysType */
+static PyTypeObject MDBIterKeysType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.MDBIterKeys",              /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)MDBIterKeys_tp_iternext,    /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* MDBIterValuesType.tp_iternext */
+static PyObject *
+MDBIterValues_tp_iternext(DBIter *self)
+{
+    MDB *mdb = (MDB *)self->db;
+    const char *key, *value;
+    PyObject *pyvalue;
+
+    if (mdb->changed) {
+        return set_error(Error, "MDB changed during iteration");
+    }
+    key = tcmdbiternext2(mdb->mdb);
+    if (!key) {
+        return set_stopiteration_error();
+    }
+    value = tcmdbget2(mdb->mdb, key);
+    pyvalue = PyBytes_FromString(value);
+    tcfree((void *)key);
+    tcfree((void *)value);
+    return pyvalue;
+}
+
+
+/* MDBIterValuesType */
+static PyTypeObject MDBIterValuesType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.MDBIterValues",            /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)MDBIterValues_tp_iternext,  /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* MDBIterItemsType.tp_iternext */
+static PyObject *
+MDBIterItems_tp_iternext(DBIter *self)
+{
+    MDB *mdb = (MDB *)self->db;
+    const char *key, *value;
+    PyObject *pykey, *pyvalue, *pyresult = NULL;
+
+    if (mdb->changed) {
+        return set_error(Error, "MDB changed during iteration");
+    }
+    key = tcmdbiternext2(mdb->mdb);
+    if (!key) {
+        return set_stopiteration_error();
+    }
+    value = tcmdbget2(mdb->mdb, key);
+    pykey = PyBytes_FromString(key);
+    pyvalue = PyBytes_FromString(value);
+    if (pykey && pyvalue) {
+        pyresult = PyTuple_Pack(2, pykey, pyvalue);
+    }
+    Py_XDECREF(pykey);
+    Py_XDECREF(pyvalue);
+    tcfree((void *)key);
+    tcfree((void *)value);
+    return pyresult;
+}
+
+
+/* MDBIterItemsType */
+static PyTypeObject MDBIterItemsType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.MDBIterItems",             /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)MDBIterItems_tp_iternext,   /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/*******************************************************************************
 * MDBType
 *******************************************************************************/
 
@@ -157,41 +347,7 @@ static PyMappingMethods MDB_tp_as_mapping = {
 static PyObject *
 MDB_tp_iter(MDB *self)
 {
-    tcmdbiterinit(self->mdb);
-    self->changed = false;
-    Py_INCREF(self);
-    return (PyObject *)self;
-}
-
-
-/* MDBType.tp_iternext */
-static PyObject *
-MDB_tp_iternext(MDB *self)
-{
-    const char *key;
-    PyObject *pykey;
-
-    if (self->changed) {
-        return set_error(Error, "MDB changed during iteration");
-    }
-    key = tcmdbiternext2(self->mdb);
-    if (!key) {
-        return set_stopiteration_error();
-    }
-    pykey = PyBytes_FromString(key);
-    tcfree((void *)key);
-    return pykey;
-}
-
-
-/* MDB.__length_hint__ */
-PyDoc_STRVAR(MDB_length_hint_doc,
-"Private method returning an estimate of len(list(mdb)).");
-
-static PyObject *
-MDB_length_hint(MDB *self)
-{
-    return PyLong_FromSsize_t(MDB_Length(self));
+    return new_MDBIter(self, &MDBIterKeysType);
 }
 
 
@@ -358,10 +514,47 @@ MDB_searchkeys(MDB *self, PyObject *args)
 }
 
 
+/* MDB.iterkeys() */
+PyDoc_STRVAR(MDB_iterkeys_doc,
+"iterkeys()\n\
+\n\
+Return an iterator over the database's keys.");
+
+static PyObject *
+MDB_iterkeys(MDB *self)
+{
+    return new_MDBIter(self, &MDBIterKeysType);
+}
+
+
+/* MDB.itervalues() */
+PyDoc_STRVAR(MDB_itervalues_doc,
+"itervalues()\n\
+\n\
+Return an iterator over the database's values.");
+
+static PyObject *
+MDB_itervalues(MDB *self)
+{
+    return new_MDBIter(self, &MDBIterValuesType);
+}
+
+
+/* MDB.iteritems() */
+PyDoc_STRVAR(MDB_iteritems_doc,
+"iteritems()\n\
+\n\
+Return an iterator over the database's items.");
+
+static PyObject *
+MDB_iteritems(MDB *self)
+{
+    return new_MDBIter(self, &MDBIterItemsType);
+}
+
+
 /* MDBType.tp_methods */
 static PyMethodDef MDB_tp_methods[] = {
-    {"__length_hint__", (PyCFunction)MDB_length_hint, METH_NOARGS,
-     MDB_length_hint_doc},
     {"clear", (PyCFunction)MDB_clear, METH_NOARGS, MDB_clear_doc},
     {"get", (PyCFunction)MDB_get, METH_VARARGS, MDB_get_doc},
     {"remove", (PyCFunction)MDB_remove, METH_VARARGS, MDB_remove_doc},
@@ -370,6 +563,9 @@ static PyMethodDef MDB_tp_methods[] = {
     {"putcat", (PyCFunction)MDB_putcat, METH_VARARGS, MDB_putcat_doc},
     {"searchkeys", (PyCFunction)MDB_searchkeys, METH_VARARGS,
      MDB_searchkeys_doc},
+    {"iterkeys", (PyCFunction)MDB_iterkeys, METH_NOARGS, MDB_iterkeys_doc},
+    {"itervalues", (PyCFunction)MDB_itervalues, METH_NOARGS, MDB_itervalues_doc},
+    {"iteritems", (PyCFunction)MDB_iteritems, METH_NOARGS, MDB_iteritems_doc},
     {NULL}  /* Sentinel */
 };
 
@@ -420,7 +616,7 @@ static PyTypeObject MDBType = {
     0,                                        /*tp_richcompare*/
     0,                                        /*tp_weaklistoffset*/
     (getiterfunc)MDB_tp_iter,                 /*tp_iter*/
-    (iternextfunc)MDB_tp_iternext,            /*tp_iternext*/
+    0,                                        /*tp_iternext*/
     MDB_tp_methods,                           /*tp_methods*/
     0,                                        /*tp_members*/
     MDB_tp_getsets,                           /*tp_getsets*/
