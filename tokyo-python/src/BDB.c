@@ -1534,7 +1534,9 @@ BDB_addint(BDB *self, PyObject *args)
             return set_bdb_error(self->bdb, key);
         }
     }
-    self->changed = true;
+    if (num) {
+        self->changed = true;
+    }
     return PyInt_FromLong((long)result);
 }
 
@@ -1570,7 +1572,9 @@ BDB_adddouble(BDB *self, PyObject *args)
     if (Py_IS_NAN(result)) {
         return set_bdb_error(self->bdb, key);
     }
-    self->changed = true;
+    if (num) {
+        self->changed = true;
+    }
     return PyFloat_FromDouble(result);
 }
 

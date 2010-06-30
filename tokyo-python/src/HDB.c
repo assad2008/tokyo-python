@@ -906,7 +906,9 @@ HDB_addint(HDB *self, PyObject *args)
     if (result == INT_MIN && tchdbecode(self->hdb) != TCESUCCESS) {
         return set_hdb_error(self->hdb, key);
     }
-    self->changed = true;
+    if (num) {
+        self->changed = true;
+    }
     return PyInt_FromLong((long)result);
 }
 
@@ -942,7 +944,9 @@ HDB_adddouble(HDB *self, PyObject *args)
     if (Py_IS_NAN(result)) {
         return set_hdb_error(self->hdb, key);
     }
-    self->changed = true;
+    if (num) {
+        self->changed = true;
+    }
     return PyFloat_FromDouble(result);
 }
 

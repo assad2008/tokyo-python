@@ -26,6 +26,7 @@ Release 0.6.1
 - added method TDBQuery.count() - `Issue 2 <http://code.google.com/p/tokyo-python/issues/detail?id=2>`_ fixed
 - added iter[keys/values/items] methods to HDB, MDB, BDB, NDB, FDB and TDB
 - added itervalues[keys/vals] methods to TDB
+- fixed a bug in all addint/adddouble methods (always marked the db as changed) - I'll get it right eventually :-)
 
 
 Release 0.6.0

@@ -804,7 +804,9 @@ FDB_addint(FDB *self, PyObject *args)
             return set_fdb_error(self->fdb, key);
         }
     }
-    self->changed = true;
+    if (num) {
+        self->changed = true;
+    }
     return PyInt_FromLong((long)result);
 }
 
@@ -835,7 +837,9 @@ FDB_adddouble(FDB *self, PyObject *args)
     if (Py_IS_NAN(result)) {
         return set_fdb_error(self->fdb, key);
     }
-    self->changed = true;
+    if (num) {
+        self->changed = true;
+    }
     return PyFloat_FromDouble(result);
 }
 
