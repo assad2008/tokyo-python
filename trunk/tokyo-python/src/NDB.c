@@ -1,4 +1,194 @@
 /*******************************************************************************
+* NDB iterator types
+*******************************************************************************/
+
+/* new_NDBIter */
+static PyObject *
+new_NDBIter(NDB *self, PyTypeObject *type)
+{
+    PyObject *iter = DBIter_tp_new(type, (PyObject *)self);
+    if (!iter) {
+        return NULL;
+    }
+    tcndbiterinit(self->ndb);
+    self->changed = false;
+    return iter;
+}
+
+
+/* NDBIterKeysType.tp_iternext */
+static PyObject *
+NDBIterKeys_tp_iternext(DBIter *self)
+{
+    NDB *ndb = (NDB *)self->db;
+    const char *key;
+    PyObject *pykey;
+
+    if (ndb->changed) {
+        return set_error(Error, "NDB changed during iteration");
+    }
+    key = tcndbiternext2(ndb->ndb);
+    if (!key) {
+        return set_stopiteration_error();
+    }
+    pykey = PyBytes_FromString(key);
+    tcfree((void *)key);
+    return pykey;
+}
+
+
+/* NDBIterKeysType */
+static PyTypeObject NDBIterKeysType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.NDBIterKeys",              /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)NDBIterKeys_tp_iternext,    /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* NDBIterValuesType.tp_iternext */
+static PyObject *
+NDBIterValues_tp_iternext(DBIter *self)
+{
+    NDB *ndb = (NDB *)self->db;
+    const char *key, *value;
+    PyObject *pyvalue;
+
+    if (ndb->changed) {
+        return set_error(Error, "NDB changed during iteration");
+    }
+    key = tcndbiternext2(ndb->ndb);
+    if (!key) {
+        return set_stopiteration_error();
+    }
+    value = tcndbget2(ndb->ndb, key);
+    pyvalue = PyBytes_FromString(value);
+    tcfree((void *)key);
+    tcfree((void *)value);
+    return pyvalue;
+}
+
+
+/* NDBIterValuesType */
+static PyTypeObject NDBIterValuesType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.NDBIterValues",            /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)NDBIterValues_tp_iternext,  /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* NDBIterItemsType.tp_iternext */
+static PyObject *
+NDBIterItems_tp_iternext(DBIter *self)
+{
+    NDB *ndb = (NDB *)self->db;
+    const char *key, *value;
+    PyObject *pykey, *pyvalue, *pyresult = NULL;
+
+    if (ndb->changed) {
+        return set_error(Error, "NDB changed during iteration");
+    }
+    key = tcndbiternext2(ndb->ndb);
+    if (!key) {
+        return set_stopiteration_error();
+    }
+    value = tcndbget2(ndb->ndb, key);
+    pykey = PyBytes_FromString(key);
+    pyvalue = PyBytes_FromString(value);
+    if (pykey && pyvalue) {
+        pyresult = PyTuple_Pack(2, pykey, pyvalue);
+    }
+    Py_XDECREF(pykey);
+    Py_XDECREF(pyvalue);
+    tcfree((void *)key);
+    tcfree((void *)value);
+    return pyresult;
+}
+
+
+/* NDBIterItemsType */
+static PyTypeObject NDBIterItemsType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.NDBIterItems",             /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)NDBIterItems_tp_iternext,   /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/*******************************************************************************
 * NDBType
 *******************************************************************************/
 
@@ -144,41 +334,7 @@ static PyMappingMethods NDB_tp_as_mapping = {
 static PyObject *
 NDB_tp_iter(NDB *self)
 {
-    tcndbiterinit(self->ndb);
-    self->changed = false;
-    Py_INCREF(self);
-    return (PyObject *)self;
-}
-
-
-/* NDBType.tp_iternext */
-static PyObject *
-NDB_tp_iternext(NDB *self)
-{
-    const char *key;
-    PyObject *pykey;
-
-    if (self->changed) {
-        return set_error(Error, "NDB changed during iteration");
-    }
-    key = tcndbiternext2(self->ndb);
-    if (!key) {
-        return set_stopiteration_error();
-    }
-    pykey = PyBytes_FromString(key);
-    tcfree((void *)key);
-    return pykey;
-}
-
-
-/* NDB.__length_hint__ */
-PyDoc_STRVAR(NDB_length_hint_doc,
-"Private method returning an estimate of len(list(ndb)).");
-
-static PyObject *
-NDB_length_hint(NDB *self)
-{
-    return PyLong_FromSsize_t(NDB_Length(self));
+    return new_NDBIter(self, &NDBIterKeysType);
 }
 
 
@@ -345,10 +501,47 @@ NDB_searchkeys(NDB *self, PyObject *args)
 }
 
 
+/* NDB.iterkeys() */
+PyDoc_STRVAR(NDB_iterkeys_doc,
+"iterkeys()\n\
+\n\
+Return an iterator over the database's keys.");
+
+static PyObject *
+NDB_iterkeys(NDB *self)
+{
+    return new_NDBIter(self, &NDBIterKeysType);
+}
+
+
+/* NDB.itervalues() */
+PyDoc_STRVAR(NDB_itervalues_doc,
+"itervalues()\n\
+\n\
+Return an iterator over the database's values.");
+
+static PyObject *
+NDB_itervalues(NDB *self)
+{
+    return new_NDBIter(self, &NDBIterValuesType);
+}
+
+
+/* NDB.iteritems() */
+PyDoc_STRVAR(NDB_iteritems_doc,
+"iteritems()\n\
+\n\
+Return an iterator over the database's items.");
+
+static PyObject *
+NDB_iteritems(NDB *self)
+{
+    return new_NDBIter(self, &NDBIterItemsType);
+}
+
+
 /* NDBType.tp_methods */
 static PyMethodDef NDB_tp_methods[] = {
-    {"__length_hint__", (PyCFunction)NDB_length_hint, METH_NOARGS,
-     NDB_length_hint_doc},
     {"clear", (PyCFunction)NDB_clear, METH_NOARGS, NDB_clear_doc},
     {"get", (PyCFunction)NDB_get, METH_VARARGS, NDB_get_doc},
     {"remove", (PyCFunction)NDB_remove, METH_VARARGS, NDB_remove_doc},
@@ -357,6 +550,9 @@ static PyMethodDef NDB_tp_methods[] = {
     {"putcat", (PyCFunction)NDB_putcat, METH_VARARGS, NDB_putcat_doc},
     {"searchkeys", (PyCFunction)NDB_searchkeys, METH_VARARGS,
      NDB_searchkeys_doc},
+    {"iterkeys", (PyCFunction)NDB_iterkeys, METH_NOARGS, NDB_iterkeys_doc},
+    {"itervalues", (PyCFunction)NDB_itervalues, METH_NOARGS, NDB_itervalues_doc},
+    {"iteritems", (PyCFunction)NDB_iteritems, METH_NOARGS, NDB_iteritems_doc},
     {NULL}  /* Sentinel */
 };
 
@@ -407,7 +603,7 @@ static PyTypeObject NDBType = {
     0,                                        /*tp_richcompare*/
     0,                                        /*tp_weaklistoffset*/
     (getiterfunc)NDB_tp_iter,                 /*tp_iter*/
-    (iternextfunc)NDB_tp_iternext,            /*tp_iternext*/
+    0,                                        /*tp_iternext*/
     NDB_tp_methods,                           /*tp_methods*/
     0,                                        /*tp_members*/
     NDB_tp_getsets,                           /*tp_getsets*/

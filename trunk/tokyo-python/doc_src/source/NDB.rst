@@ -113,33 +113,32 @@ On-memory Tree Database --- :class:`NDB`
         corresponding record, a new record is stored.
 
 
+    .. method:: iterkeys
+
+        Return an iterator over the database's keys.
+
+        .. versionadded:: 0.6.1
+
+
+    .. method:: itervalues
+
+        Return an iterator over the database's values.
+
+        .. versionadded:: 0.6.1
+
+
+    .. method:: iteritems
+
+        Return an iterator over the database's items (``(key, value)`` pairs).
+
+        .. versionadded:: 0.6.1
+
+
     .. method:: searchkeys(prefix[, max])
 
         Return a frozenset of keys starting with *prefix*. If given, *max* is
         the maximum number of keys to fetch, if omitted or specified as a
         negative value no limit is applied.
-
-
-    Methods :meth:`keys`, :meth:`values` and :meth:`items` are not yet
-    implemented (mainly because I didn't settle on how to do it: should they
-    return :class:`Iterable`, :class:`Iterator`, :class:`MappingView`, etc.?).
-    Any help would be greatly appreciated in this matter.
-
-    For the time being, for those of you who really need these methods, it's
-    trivial to implement them in python. Here is an example using generators::
-
-        from tokyo.cabinet import NDB as _NDB
-
-        class NDB(_NDB):
-
-            def keys(self):
-                return (key for key in self)
-
-            def values(self):
-                return (self[key] for key in self)
-
-            def items(self):
-                return ((key, self[key]) for key in self)
 
 
     .. attribute:: size

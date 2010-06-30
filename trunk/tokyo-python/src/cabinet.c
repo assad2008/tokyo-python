@@ -203,6 +203,9 @@ init_cabinet(void)
         PyType_Ready(&BDBIterValuesType) ||
         PyType_Ready(&BDBIterItemsType) ||
         PyType_Ready(&NDBType) ||
+        PyType_Ready(&NDBIterKeysType) ||
+        PyType_Ready(&NDBIterValuesType) ||
+        PyType_Ready(&NDBIterItemsType) ||
         PyType_Ready(&FDBType) ||
         PyType_Ready(&TDBType) ||
         PyType_Ready(&TDBQueryType) ||
