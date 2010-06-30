@@ -194,6 +194,9 @@ init_cabinet(void)
         PyType_Ready(&HDBIterValuesType) ||
         PyType_Ready(&HDBIterItemsType) ||
         PyType_Ready(&MDBType) ||
+        PyType_Ready(&MDBIterKeysType) ||
+        PyType_Ready(&MDBIterValuesType) ||
+        PyType_Ready(&MDBIterItemsType) ||
         PyType_Ready(&BDBType) ||
         PyType_Ready(&BDBCursorType) ||
         PyType_Ready(&BDBIterKeysType) ||
