@@ -98,8 +98,160 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     TDBQRY *qry;
+    bool changed;
     TDB *tdb;
 } TDBQuery;
+
+
+/*******************************************************************************
+* DBIter
+*******************************************************************************/
+
+/* DBIter */
+typedef struct {
+    PyObject_HEAD
+    PyObject *db;
+} DBIter;
+
+
+/* DBIter_tp_traverse */
+static int
+DBIter_tp_traverse(DBIter *self, visitproc visit, void *arg)
+{
+    Py_VISIT(self->db);
+    return 0;
+}
+
+
+/* DBIter_tp_clear */
+static int
+DBIter_tp_clear(DBIter *self)
+{
+    Py_CLEAR(self->db);
+    return 0;
+}
+
+
+/* DBIter_tp_dealloc */
+static void
+DBIter_tp_dealloc(DBIter *self)
+{
+    DBIter_tp_clear(self);
+    Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
+
+/* DBIter_tp_new */
+static PyObject *
+DBIter_tp_new(PyTypeObject *type, PyObject *db)
+{
+    DBIter *self = (DBIter *)type->tp_alloc(type, 0);
+    if (!self) {
+        return NULL;
+    }
+    /* self->db */
+    Py_INCREF(db);
+    self->db = db;
+    return (PyObject *)self;
+}
+
+
+/* DBIter.__length_hint__ */
+PyDoc_STRVAR(DBIter_length_hint_doc,
+"Private method returning an estimate of len(list(db)).");
+
+static PyObject *
+DBIter_length_hint(DBIter *self)
+{
+    return PyLong_FromSsize_t(PyMapping_Length(self->db));
+}
+
+
+/* DBIter_tp_methods */
+static PyMethodDef DBIter_tp_methods[] = {
+    {"__length_hint__", (PyCFunction)DBIter_length_hint, METH_NOARGS,
+     DBIter_length_hint_doc},
+    {NULL}  /* Sentinel */
+};
+
+
+/*******************************************************************************
+* DBQueryIter
+*******************************************************************************/
+
+/* DBQueryIter */
+typedef struct {
+    PyObject_HEAD
+    TCLIST *result;
+    int index;
+    PyObject *qry;
+} DBQueryIter;
+
+
+/* DBQueryIter_tp_traverse */
+static int
+DBQueryIter_tp_traverse(DBQueryIter *self, visitproc visit, void *arg)
+{
+    Py_VISIT(self->qry);
+    return 0;
+}
+
+
+/* DBQueryIter_tp_clear */
+static int
+DBQueryIter_tp_clear(DBQueryIter *self)
+{
+    Py_CLEAR(self->qry);
+    return 0;
+}
+
+
+/* DBQueryIter_tp_dealloc */
+static void
+DBQueryIter_tp_dealloc(DBQueryIter *self)
+{
+    tclistdel(self->result);
+    DBQueryIter_tp_clear(self);
+    Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
+
+/* DBQueryIter_tp_new */
+static PyObject *
+DBQueryIter_tp_new(PyTypeObject *type, PyObject *qry, TCLIST *result)
+{
+    DBQueryIter *self = (DBQueryIter *)type->tp_alloc(type, 0);
+    if (!self) {
+        return NULL;
+    }
+    /* self->result */
+    self->result = result;
+    /* self->index */
+    self->index = -1;
+    /* self->qry */
+    Py_INCREF(qry);
+    self->qry = qry;
+    return (PyObject *)self;
+}
+
+
+/* DBQueryIter.__length_hint__ */
+PyDoc_STRVAR(DBQueryIter_length_hint_doc,
+"Private method returning an estimate of len(list(qry)).");
+
+static PyObject *
+DBQueryIter_length_hint(DBQueryIter *self)
+{
+    return PyInt_FromLong((long)tclistnum(self->result));
+}
+
+
+/* DBQueryIter_tp_methods */
+static PyMethodDef DBQueryIter_tp_methods[] = {
+    {"__length_hint__", (PyCFunction)DBQueryIter_length_hint, METH_NOARGS,
+     DBQueryIter_length_hint_doc},
+    {NULL}  /* Sentinel */
+};
 
 
 /*******************************************************************************
@@ -211,12 +363,15 @@ init_cabinet(void)
         PyType_Ready(&FDBIterValuesType) ||
         PyType_Ready(&FDBIterItemsType) ||
         PyType_Ready(&TDBType) ||
-        PyType_Ready(&TDBQueryType) ||
         PyType_Ready(&TDBIterKeysType) ||
         PyType_Ready(&TDBIterValuesType) ||
         PyType_Ready(&TDBIterItemsType) ||
         PyType_Ready(&TDBIterValuesKeysType) ||
-        PyType_Ready(&TDBIterValuesValsType)
+        PyType_Ready(&TDBIterValuesValsType) ||
+        PyType_Ready(&TDBQueryType) ||
+        PyType_Ready(&TDBQueryIterKeysType) ||
+        PyType_Ready(&TDBQueryIterValuesType) ||
+        PyType_Ready(&TDBQueryIterItemsType)
        ) {
         return NULL;
     }

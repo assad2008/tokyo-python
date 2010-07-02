@@ -44,6 +44,201 @@ TCMAP *pytctdbiternext4(TCTDB *tdb, TCXSTR *kstr){
 
 
 /*******************************************************************************
+* TDBQuery iterator types
+*******************************************************************************/
+
+/* new_TDBQueryIter */
+static PyObject *
+new_TDBQueryIter(TDBQuery *self, PyTypeObject *type)
+{
+    TCLIST *result;
+
+    Py_BEGIN_ALLOW_THREADS
+    result = tctdbqrysearch(self->qry);
+    Py_END_ALLOW_THREADS
+    PyObject *iter = DBQueryIter_tp_new(type, (PyObject *)self, result);
+    if (!iter) {
+        return NULL;
+    }
+    self->tdb->changed = false;
+    self->changed = false;
+    return iter;
+}
+
+
+/* TDBQueryIterKeysType.tp_iternext */
+static PyObject *
+TDBQueryIterKeys_tp_iternext(DBQueryIter *self)
+{
+    TDBQuery *qry = (TDBQuery *)self->qry;
+    const char *key;
+
+    if (qry->changed || qry->tdb->changed) {
+        return set_error(Error, "TDBQuery or TDB changed during iteration");
+    }
+    self->index += 1;
+    key = tclistval2(self->result, self->index);
+    if (!key) {
+        return set_stopiteration_error();
+    }
+    return PyBytes_FromString(key);
+}
+
+
+/* TDBQueryIterKeysType */
+static PyTypeObject TDBQueryIterKeysType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.TDBQueryIterKeys",         /*tp_name*/
+    sizeof(DBQueryIter),                      /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBQueryIter_tp_dealloc,       /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBQueryIter_tp_traverse,    /*tp_traverse*/
+    (inquiry)DBQueryIter_tp_clear,            /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)TDBQueryIterKeys_tp_iternext, /*tp_iternext*/
+    DBQueryIter_tp_methods,                   /*tp_methods*/
+};
+
+
+/* TDBQueryIterValuesType.tp_iternext */
+static PyObject *
+TDBQueryIterValues_tp_iternext(DBQueryIter *self)
+{
+    TDBQuery *qry = (TDBQuery *)self->qry;
+    const char *key;
+    TCMAP *value;
+    PyObject *pyvalue;
+
+    if (qry->changed || qry->tdb->changed) {
+        return set_error(Error, "TDBQuery or TDB changed during iteration");
+    }
+    self->index += 1;
+    key = tclistval2(self->result, self->index);
+    if (!key) {
+        return set_stopiteration_error();
+    }
+    value = tctdbget(qry->tdb->tdb, key, strlen(key));
+    pyvalue = tcmap_to_dict(value);
+    tcmapdel(value);
+    return pyvalue;
+}
+
+
+/* TDBQueryIterValuesType */
+static PyTypeObject TDBQueryIterValuesType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.TDBQueryIterValues",       /*tp_name*/
+    sizeof(DBQueryIter),                      /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBQueryIter_tp_dealloc,       /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBQueryIter_tp_traverse,    /*tp_traverse*/
+    (inquiry)DBQueryIter_tp_clear,            /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)TDBQueryIterValues_tp_iternext, /*tp_iternext*/
+    DBQueryIter_tp_methods,                   /*tp_methods*/
+};
+
+
+/* TDBQueryIterItemsType.tp_iternext */
+static PyObject *
+TDBQueryIterItems_tp_iternext(DBQueryIter *self)
+{
+    TDBQuery *qry = (TDBQuery *)self->qry;
+    const char *key;
+    TCMAP *value;
+    PyObject *pykey, *pyvalue, *pyresult = NULL;
+
+    if (qry->changed || qry->tdb->changed) {
+        return set_error(Error, "TDBQuery or TDB changed during iteration");
+    }
+    self->index += 1;
+    key = tclistval2(self->result, self->index);
+    if (!key) {
+        return set_stopiteration_error();
+    }
+    value = tctdbget(qry->tdb->tdb, key, strlen(key));
+    pykey = PyBytes_FromString(key);
+    pyvalue = tcmap_to_dict(value);
+    if (pykey && pyvalue) {
+        pyresult = PyTuple_Pack(2, pykey, pyvalue);
+    }
+    Py_XDECREF(pykey);
+    Py_XDECREF(pyvalue);
+    tcmapdel(value);
+    return pyresult;
+}
+
+
+/* TDBQueryIterItemsType */
+static PyTypeObject TDBQueryIterItemsType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.TDBQueryIterItems",        /*tp_name*/
+    sizeof(DBQueryIter),                      /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBQueryIter_tp_dealloc,       /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBQueryIter_tp_traverse,    /*tp_traverse*/
+    (inquiry)DBQueryIter_tp_clear,            /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)TDBQueryIterItems_tp_iternext, /*tp_iternext*/
+    DBQueryIter_tp_methods,                   /*tp_methods*/
+};
+
+
+/*******************************************************************************
 * TDBQueryType
 *******************************************************************************/
 
@@ -157,6 +352,14 @@ TDBQuery_tp_dealloc(TDBQuery *self)
 }
 
 
+/* TDBQueryType.tp_iter */
+static PyObject *
+TDBQuery_tp_iter(TDBQuery *self)
+{
+    return new_TDBQueryIter(self, &TDBQueryIterKeysType);
+}
+
+
 /* TDBQuery.search() */
 PyDoc_STRVAR(TDBQuery_search_doc,
 "search()\n\
@@ -192,6 +395,7 @@ TDBQuery_remove(TDBQuery *self)
     Py_BEGIN_ALLOW_THREADS
     result = tctdbqrysearchout(self->qry);
     Py_END_ALLOW_THREADS
+    self->changed = true;
     if (!result) {
         return set_tdb_error(self->tdb->tdb, NULL);
     }
@@ -209,6 +413,7 @@ static PyObject *
 TDBQuery_process(TDBQuery *self, PyObject *args)
 {
     PyObject *callback;
+    bool result;
 
     if (!PyArg_ParseTuple(args, "O:process", &callback)) {
         return NULL;
@@ -216,7 +421,9 @@ TDBQuery_process(TDBQuery *self, PyObject *args)
     if (!PyCallable_Check(callback)) {
         return set_error(PyExc_TypeError, "a callable is required");
     }
-    if (!tctdbqryproc(self->qry, TDBQuery_process_cb, (void *)callback)) {
+    result = tctdbqryproc(self->qry, TDBQuery_process_cb, (void *)callback);
+    self->changed = true;
+    if (!result) {
         return set_tdb_error(self->tdb->tdb, NULL);
     }
     if (PyErr_Occurred()) {
@@ -247,6 +454,7 @@ TDBQuery_sort(TDBQuery *self, PyObject *args)
         return NULL;
     }
     tctdbqrysetorder(self->qry, column, type);
+    self->changed = true;
     Py_RETURN_NONE;
 }
 
@@ -266,6 +474,7 @@ TDBQuery_limit(TDBQuery *self, PyObject *args)
         return NULL;
     }
     tctdbqrysetlimit(self->qry, max, skip);
+    self->changed = true;
     Py_RETURN_NONE;
 }
 
@@ -291,6 +500,7 @@ TDBQuery_filter(TDBQuery *self, PyObject *args)
         return NULL;
     }
     tctdbqryaddcond(self->qry, column, condition, expr);
+    self->changed = true;
     Py_RETURN_NONE;
 }
 
@@ -306,6 +516,45 @@ TDBQuery_count(TDBQuery *self)
 }
 
 
+/* TDBQuery.iterkeys() */
+PyDoc_STRVAR(TDBQuery_iterkeys_doc,
+"iterkeys()\n\
+\n\
+Return an iterator over the query's keys.");
+
+static PyObject *
+TDBQuery_iterkeys(TDBQuery *self)
+{
+    return new_TDBQueryIter(self, &TDBQueryIterKeysType);
+}
+
+
+/* TDBQuery.itervalues() */
+PyDoc_STRVAR(TDBQuery_itervalues_doc,
+"itervalues()\n\
+\n\
+Return an iterator over the query's values.");
+
+static PyObject *
+TDBQuery_itervalues(TDBQuery *self)
+{
+    return new_TDBQueryIter(self, &TDBQueryIterValuesType);
+}
+
+
+/* TDBQuery.iteritems() */
+PyDoc_STRVAR(TDBQuery_iteritems_doc,
+"iteritems()\n\
+\n\
+Return an iterator over the query's items.");
+
+static PyObject *
+TDBQuery_iteritems(TDBQuery *self)
+{
+    return new_TDBQueryIter(self, &TDBQueryIterItemsType);
+}
+
+
 /* TDBQueryType.tp_methods */
 static PyMethodDef TDBQuery_tp_methods[] = {
     {"search", (PyCFunction)TDBQuery_search, METH_NOARGS, TDBQuery_search_doc},
@@ -316,6 +565,12 @@ static PyMethodDef TDBQuery_tp_methods[] = {
     {"limit", (PyCFunction)TDBQuery_limit, METH_VARARGS, TDBQuery_limit_doc},
     {"filter", (PyCFunction)TDBQuery_filter, METH_VARARGS, TDBQuery_filter_doc},
     {"count", (PyCFunction)TDBQuery_count, METH_NOARGS, TDBQuery_count_doc},
+    {"iterkeys", (PyCFunction)TDBQuery_iterkeys, METH_NOARGS,
+     TDBQuery_iterkeys_doc},
+    {"itervalues", (PyCFunction)TDBQuery_itervalues, METH_NOARGS,
+     TDBQuery_itervalues_doc},
+    {"iteritems", (PyCFunction)TDBQuery_iteritems, METH_NOARGS,
+     TDBQuery_iteritems_doc},
     {NULL}  /* Sentinel */
 };
 
@@ -365,7 +620,7 @@ static PyTypeObject TDBQueryType = {
     (inquiry)TDBQuery_tp_clear,               /*tp_clear*/
     0,                                        /*tp_richcompare*/
     0,                                        /*tp_weaklistoffset*/
-    0,                                        /*tp_iter*/
+    (getiterfunc)TDBQuery_tp_iter,            /*tp_iter*/
     0,                                        /*tp_iternext*/
     TDBQuery_tp_methods,                      /*tp_methods*/
     0,                                        /*tp_members*/
