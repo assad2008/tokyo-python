@@ -291,7 +291,7 @@ DBIter_tp_new(PyTypeObject *type, PyObject *db)
 
 /* DBIter.__length_hint__ */
 PyDoc_STRVAR(DBIter_length_hint_doc,
-"Private method returning an estimate of len(list(hdb)).");
+"Private method returning an estimate of len(list(db)).");
 
 static PyObject *
 DBIter_length_hint(DBIter *self)

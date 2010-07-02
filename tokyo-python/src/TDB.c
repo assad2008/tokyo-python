@@ -209,6 +209,7 @@ static PyObject *
 TDBQuery_process(TDBQuery *self, PyObject *args)
 {
     PyObject *callback;
+    bool result;
 
     if (!PyArg_ParseTuple(args, "O:process", &callback)) {
         return NULL;
@@ -216,7 +217,8 @@ TDBQuery_process(TDBQuery *self, PyObject *args)
     if (!PyCallable_Check(callback)) {
         return set_error(PyExc_TypeError, "a callable is required");
     }
-    if (!tctdbqryproc(self->qry, TDBQuery_process_cb, (void *)callback)) {
+    result = tctdbqryproc(self->qry, TDBQuery_process_cb, (void *)callback);
+    if (!result) {
         return set_tdb_error(self->tdb->tdb, NULL);
     }
     if (PyErr_Occurred()) {

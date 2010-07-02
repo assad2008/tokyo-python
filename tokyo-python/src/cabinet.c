@@ -211,12 +211,12 @@ init_cabinet(void)
         PyType_Ready(&FDBIterValuesType) ||
         PyType_Ready(&FDBIterItemsType) ||
         PyType_Ready(&TDBType) ||
-        PyType_Ready(&TDBQueryType) ||
         PyType_Ready(&TDBIterKeysType) ||
         PyType_Ready(&TDBIterValuesType) ||
         PyType_Ready(&TDBIterItemsType) ||
         PyType_Ready(&TDBIterValuesKeysType) ||
-        PyType_Ready(&TDBIterValuesValsType)
+        PyType_Ready(&TDBIterValuesValsType) ||
+        PyType_Ready(&TDBQueryType)
        ) {
         return NULL;
     }
