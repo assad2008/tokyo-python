@@ -21,18 +21,19 @@ static PyObject *
 MDBIterKeys_tp_iternext(DBIter *self)
 {
     MDB *mdb = (MDB *)self->db;
-    const char *key;
+    void *key;
+    int key_size;
     PyObject *pykey;
 
     if (mdb->changed) {
         return set_error(Error, "MDB changed during iteration");
     }
-    key = tcmdbiternext2(mdb->mdb);
+    key = tcmdbiternext(mdb->mdb, &key_size);
     if (!key) {
         return set_stopiteration_error();
     }
-    pykey = PyBytes_FromString(key);
-    tcfree((void *)key);
+    pykey = PyBytes_FromStringAndSize((char *)key, (Py_ssize_t)key_size);
+    tcfree(key);
     return pykey;
 }
 
@@ -75,20 +76,21 @@ static PyObject *
 MDBIterValues_tp_iternext(DBIter *self)
 {
     MDB *mdb = (MDB *)self->db;
-    const char *key, *value;
+    void *key, *value;
+    int key_size, value_size;
     PyObject *pyvalue;
 
     if (mdb->changed) {
         return set_error(Error, "MDB changed during iteration");
     }
-    key = tcmdbiternext2(mdb->mdb);
+    key = tcmdbiternext(mdb->mdb, &key_size);
     if (!key) {
         return set_stopiteration_error();
     }
-    value = tcmdbget2(mdb->mdb, key);
-    pyvalue = PyBytes_FromString(value);
-    tcfree((void *)key);
-    tcfree((void *)value);
+    value = tcmdbget(mdb->mdb, key, key_size, &value_size);
+    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    tcfree(key);
+    tcfree(value);
     return pyvalue;
 }
 
@@ -131,26 +133,27 @@ static PyObject *
 MDBIterItems_tp_iternext(DBIter *self)
 {
     MDB *mdb = (MDB *)self->db;
-    const char *key, *value;
+    void *key, *value;
+    int key_size, value_size;
     PyObject *pykey, *pyvalue, *pyresult = NULL;
 
     if (mdb->changed) {
         return set_error(Error, "MDB changed during iteration");
     }
-    key = tcmdbiternext2(mdb->mdb);
+    key = tcmdbiternext(mdb->mdb, &key_size);
     if (!key) {
         return set_stopiteration_error();
     }
-    value = tcmdbget2(mdb->mdb, key);
-    pykey = PyBytes_FromString(key);
-    pyvalue = PyBytes_FromString(value);
+    value = tcmdbget(mdb->mdb, key, key_size, &value_size);
+    pykey = PyBytes_FromStringAndSize((char *)key, (Py_ssize_t)key_size);
+    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
     if (pykey && pyvalue) {
         pyresult = PyTuple_Pack(2, pykey, pyvalue);
     }
     Py_XDECREF(pykey);
     Py_XDECREF(pyvalue);
-    tcfree((void *)key);
-    tcfree((void *)value);
+    tcfree(key);
+    tcfree(value);
     return pyresult;
 }
 
@@ -250,17 +253,19 @@ MDB_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 static
 int MDB_Contains(MDB *self, PyObject *pykey)
 {
-    const char *key, *value;
+    char *key;
+    Py_ssize_t key_size;
+    void *value;
+    int value_size;
 
-    key = PyBytes_AsString(pykey);
-    if (!key) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
         return -1;
     }
-    value = tcmdbget2(self->mdb, key);
+    value = tcmdbget(self->mdb, (void *)key, (int)key_size, &value_size);
     if (!value) {
         return 0;
     }
-    tcfree((void *)value);
+    tcfree(value);
     return 1;
 }
 
@@ -290,19 +295,21 @@ MDB_Length(MDB *self)
 static PyObject *
 MDB_GetItem(MDB *self, PyObject *pykey)
 {
-    const char *key, *value;
+    char *key;
+    Py_ssize_t key_size;
+    void *value;
+    int value_size;
     PyObject *pyvalue;
 
-    key = PyBytes_AsString(pykey);
-    if (!key) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
         return NULL;
     }
-    value = tcmdbget2(self->mdb, key);
+    value = tcmdbget(self->mdb, (void *)key, (int)key_size, &value_size);
     if (!value) {
         return set_key_error(key);
     }
-    pyvalue = PyBytes_FromString(value);
-    tcfree((void *)value);
+    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    tcfree(value);
     return pyvalue;
 }
 
@@ -311,21 +318,21 @@ MDB_GetItem(MDB *self, PyObject *pykey)
 static int
 MDB_SetItem(MDB *self, PyObject *pykey, PyObject *pyvalue)
 {
-    const char *key, *value;
+    char *key, *value;
+    Py_ssize_t key_size, value_size;
 
-    key = PyBytes_AsString(pykey);
-    if (!key) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
         return -1;
     }
     if (pyvalue) {
-        value = PyBytes_AsString(pyvalue);
-        if (!value) {
+        if (PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
             return -1;
         }
-        tcmdbput2(self->mdb, key, value);
+        tcmdbput(self->mdb, (void *)key, (int)key_size,
+                 (void *)value, (int)value_size);
     }
     else {
-        if (!tcmdbout2(self->mdb, key)) {
+        if (!tcmdbout(self->mdb, (void *)key, (int)key_size)) {
             set_key_error(key);
             return -1;
         }
@@ -436,18 +443,19 @@ put), this method raises KeyError if key is already in the database.");
 static PyObject *
 MDB_putkeep(MDB *self, PyObject *args)
 {
-    const char *key, *value;
+    char *key, *value;
+    Py_ssize_t key_size, value_size;
     PyObject *pykey, *pyvalue;
 
     if (!PyArg_ParseTuple(args, "OO:putkeep", &pykey, &pyvalue)) {
         return NULL;
     }
-    key = PyBytes_AsString(pykey);
-    value = PyBytes_AsString(pyvalue);
-    if (!(key && value)) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
+        PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tcmdbputkeep2(self->mdb, key, value)) {
+    if (!tcmdbputkeep(self->mdb, (void *)key, (int)key_size,
+                      (void *)value, (int)value_size)) {
         return set_key_error(key);
     }
     self->changed = true;
@@ -465,18 +473,19 @@ If there is no corresponding record, a new record is stored.");
 static PyObject *
 MDB_putcat(MDB *self, PyObject *args)
 {
-    const char *key, *value;
+    char *key, *value;
+    Py_ssize_t key_size, value_size;
     PyObject *pykey, *pyvalue;
 
     if (!PyArg_ParseTuple(args, "OO:putcat", &pykey, &pyvalue)) {
         return NULL;
     }
-    key = PyBytes_AsString(pykey);
-    value = PyBytes_AsString(pyvalue);
-    if (!(key && value)) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
+        PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    tcmdbputcat2(self->mdb, key, value);
+    tcmdbputcat(self->mdb, (void *)key, (int)key_size,
+                (void *)value, (int)value_size);
     self->changed = true;
     Py_RETURN_NONE;
 }
@@ -493,7 +502,8 @@ is applied.");
 static PyObject *
 MDB_searchkeys(MDB *self, PyObject *args)
 {
-    const char *prefix;
+    char *prefix;
+    Py_ssize_t prefix_size;
     int max = -1;
     TCLIST *result;
     PyObject *pyprefix, *pyresult;
@@ -501,12 +511,11 @@ MDB_searchkeys(MDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O|i:searchkeys", &pyprefix, &max)) {
         return NULL;
     }
-    prefix = PyBytes_AsString(pyprefix);
-    if (!prefix) {
+    if (PyBytes_AsStringAndSize(pyprefix, &prefix, &prefix_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcmdbfwmkeys2(self->mdb, prefix, max);
+    result = tcmdbfwmkeys(self->mdb, (void *)prefix, (int)prefix_size, max);
     Py_END_ALLOW_THREADS
     pyresult = tclist_to_frozenset(result);
     tclistdel(result);
