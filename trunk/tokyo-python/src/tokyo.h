@@ -97,7 +97,8 @@ PyUnicode_AsString(PyObject *unicode)
 PyObject *
 tclist_to_frozenset(TCLIST *result)
 {
-    int len, i;
+    const void *value;
+    int len, i, value_size;
     PyObject *pyresult, *pyvalue;
 
     pyresult = PyFrozenSet_New(NULL);
@@ -106,7 +107,9 @@ tclist_to_frozenset(TCLIST *result)
     }
     len = tclistnum(result);
     for (i = 0; i < len; i++) {
-        pyvalue = PyBytes_FromString(tclistval2(result, i));
+        value = tclistval(result, i, &value_size);
+        pyvalue = PyBytes_FromStringAndSize((char *)value,
+                                            (Py_ssize_t)value_size);
         if (!pyvalue) {
             Py_DECREF(pyresult);
             return NULL;
@@ -126,7 +129,8 @@ tclist_to_frozenset(TCLIST *result)
 PyObject *
 tclist_to_tuple(TCLIST *result)
 {
-    int len, i;
+    const void *value;
+    int len, i, value_size;
     PyObject *pyresult, *pyvalue;
 
     len = tclistnum(result);
@@ -135,7 +139,9 @@ tclist_to_tuple(TCLIST *result)
         return NULL;
     }
     for (i = 0; i < len; i++) {
-        pyvalue = PyBytes_FromString(tclistval2(result, i));
+        value = tclistval(result, i, &value_size);
+        pyvalue = PyBytes_FromStringAndSize((char *)value,
+                                            (Py_ssize_t)value_size);
         if (!pyvalue) {
             Py_DECREF(pyresult);
             return NULL;
@@ -150,7 +156,8 @@ tclist_to_tuple(TCLIST *result)
 PyObject *
 tcmap_to_dict(TCMAP *result)
 {
-    const char *key;
+    const void *key, *value;
+    int key_size, value_size;
     PyObject *pyresult, *pykey, *pyvalue;
 
     pyresult = PyDict_New();
@@ -158,9 +165,11 @@ tcmap_to_dict(TCMAP *result)
         return NULL;
     }
     tcmapiterinit(result);
-    while ((key = tcmapiternext2(result)) != NULL) {
-        pykey = PyBytes_FromString(key);
-        pyvalue = PyBytes_FromString(tcmapget2(result, key));
+    while ((key = tcmapiternext(result, &key_size)) != NULL) {
+        value = tcmapget(result, key, key_size, &value_size);
+        pykey = PyBytes_FromStringAndSize((char *)key, (Py_ssize_t)key_size);
+        pyvalue = PyBytes_FromStringAndSize((char *)value,
+                                            (Py_ssize_t)value_size);
         if (!(pykey && pyvalue)) {
             Py_XDECREF(pykey);
             Py_XDECREF(pyvalue);
@@ -186,8 +195,8 @@ dict_to_tcmap(PyObject *pyitems)
 {
     TCMAP *items;
     PyObject *pykey, *pyvalue;
-    Py_ssize_t pos = 0;
-    const char *key, *value;
+    char *key, *value;
+    Py_ssize_t key_size, value_size, pos = 0;
 
     if (!PyDict_Check(pyitems)) {
         set_error(PyExc_TypeError, "a dict is required");
@@ -199,13 +208,13 @@ dict_to_tcmap(PyObject *pyitems)
         return NULL;
     }
     while (PyDict_Next(pyitems, &pos, &pykey, &pyvalue)) {
-        key = PyBytes_AsString(pykey);
-        value = PyBytes_AsString(pyvalue);
-        if (!(key && value)) {
+        if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
+            PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
             tcmapdel(items);
             return NULL;
         }
-        tcmapput2(items, key, value);
+        tcmapput(items, (void *)key, (int)key_size,
+                 (void *)value, (int)value_size);
     }
     return items;
 }
@@ -234,78 +243,6 @@ merge_put_args(const char *name, PyObject *pyvalue, PyObject *kwargs)
                             name);
     }
 }
-
-
-/*******************************************************************************
-* DBIter
-*******************************************************************************/
-
-/* DBIter */
-typedef struct {
-    PyObject_HEAD
-    PyObject *db;
-} DBIter;
-
-
-/* DBIter_tp_traverse */
-static int
-DBIter_tp_traverse(DBIter *self, visitproc visit, void *arg)
-{
-    Py_VISIT(self->db);
-    return 0;
-}
-
-
-/* DBIter_tp_clear */
-static int
-DBIter_tp_clear(DBIter *self)
-{
-    Py_CLEAR(self->db);
-    return 0;
-}
-
-
-/* DBIter_tp_dealloc */
-static void
-DBIter_tp_dealloc(DBIter *self)
-{
-    DBIter_tp_clear(self);
-    Py_TYPE(self)->tp_free((PyObject *)self);
-}
-
-
-/* DBIter_tp_new */
-static PyObject *
-DBIter_tp_new(PyTypeObject *type, PyObject *db)
-{
-    DBIter *self = (DBIter *)type->tp_alloc(type, 0);
-    if (!self) {
-        return NULL;
-    }
-    /* self->db */
-    Py_INCREF(db);
-    self->db = db;
-    return (PyObject *)self;
-}
-
-
-/* DBIter.__length_hint__ */
-PyDoc_STRVAR(DBIter_length_hint_doc,
-"Private method returning an estimate of len(list(db)).");
-
-static PyObject *
-DBIter_length_hint(DBIter *self)
-{
-    return PyLong_FromSsize_t(PyMapping_Length(self->db));
-}
-
-
-/* DBIter_tp_methods */
-static PyMethodDef DBIter_tp_methods[] = {
-    {"__length_hint__", (PyCFunction)DBIter_length_hint, METH_NOARGS,
-     DBIter_length_hint_doc},
-    {NULL}  /* Sentinel */
-};
 
 
 #endif /* _TOKYO_PYTHON_H */

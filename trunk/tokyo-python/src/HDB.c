@@ -41,21 +41,22 @@ static PyObject *
 HDBIterKeys_tp_iternext(DBIter *self)
 {
     HDB *hdb = (HDB *)self->db;
-    const char *key;
+    void *key;
+    int key_size;
     PyObject *pykey;
 
     if (hdb->changed) {
         return set_error(Error, "HDB changed during iteration");
     }
-    key = tchdbiternext2(hdb->hdb);
+    key = tchdbiternext(hdb->hdb, &key_size);
     if (!key) {
         if (tchdbecode(hdb->hdb) == TCENOREC) {
             return set_stopiteration_error();
         }
         return set_hdb_error(hdb->hdb, NULL);
     }
-    pykey = PyBytes_FromString(key);
-    tcfree((void *)key);
+    pykey = PyBytes_FromStringAndSize((char *)key, (Py_ssize_t)key_size);
+    tcfree(key);
     return pykey;
 }
 
@@ -115,7 +116,8 @@ HDBIterValues_tp_iternext(DBIter *self)
         }
     }
     else {
-        pyvalue = PyBytes_FromString((char *)tcxstrptr(value));
+        pyvalue = PyBytes_FromStringAndSize((char *)tcxstrptr(value),
+                                            (Py_ssize_t)tcxstrsize(value));
     }
     tcxstrdel(key);
     tcxstrdel(value);
@@ -178,8 +180,10 @@ HDBIterItems_tp_iternext(DBIter *self)
         }
     }
     else {
-        pykey = PyBytes_FromString((char *)tcxstrptr(key));
-        pyvalue = PyBytes_FromString((char *)tcxstrptr(value));
+        pykey = PyBytes_FromStringAndSize((char *)tcxstrptr(key),
+                                          (Py_ssize_t)tcxstrsize(key));
+        pyvalue = PyBytes_FromStringAndSize((char *)tcxstrptr(value),
+                                            (Py_ssize_t)tcxstrsize(value));
         if (pykey && pyvalue) {
             pyresult = PyTuple_Pack(2, pykey, pyvalue);
         }
@@ -279,13 +283,15 @@ HDB_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 static int
 HDB_Contains(HDB *self, PyObject *pykey)
 {
-    const char *key, *value;
+    char *key;
+    Py_ssize_t key_size;
+    void *value;
+    int value_size;
 
-    key = PyBytes_AsString(pykey);
-    if (!key) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
         return -1;
     }
-    value = tchdbget2(self->hdb, key);
+    value = tchdbget(self->hdb, (void *)key, (int)key_size, &value_size);
     if (!value) {
         if (tchdbecode(self->hdb) == TCENOREC) {
             return 0;
@@ -293,7 +299,7 @@ HDB_Contains(HDB *self, PyObject *pykey)
         set_hdb_error(self->hdb, NULL);
         return -1;
     }
-    tcfree((void *)value);
+    tcfree(value);
     return 1;
 }
 
@@ -323,19 +329,21 @@ HDB_Length(HDB *self)
 static PyObject *
 HDB_GetItem(HDB *self, PyObject *pykey)
 {
-    const char *key, *value;
+    char *key;
+    Py_ssize_t key_size;
+    void *value;
+    int value_size;
     PyObject *pyvalue;
 
-    key = PyBytes_AsString(pykey);
-    if (!key) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
         return NULL;
     }
-    value = tchdbget2(self->hdb, key);
+    value = tchdbget(self->hdb, (void *)key, (int)key_size, &value_size);
     if (!value) {
         return set_hdb_error(self->hdb, key);
     }
-    pyvalue = PyBytes_FromString(value);
-    tcfree((void *)value);
+    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    tcfree(value);
     return pyvalue;
 }
 
@@ -344,24 +352,24 @@ HDB_GetItem(HDB *self, PyObject *pykey)
 static int
 HDB_SetItem(HDB *self, PyObject *pykey, PyObject *pyvalue)
 {
-    const char *key, *value;
+    char *key, *value;
+    Py_ssize_t key_size, value_size;
 
-    key = PyBytes_AsString(pykey);
-    if (!key) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
         return -1;
     }
     if (pyvalue) {
-        value = PyBytes_AsString(pyvalue);
-        if (!value) {
+        if (PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
             return -1;
         }
-        if (!tchdbput2(self->hdb, key, value)) {
+        if (!tchdbput(self->hdb, (void *)key, (int)key_size,
+                      (void *)value, (int)value_size)) {
             set_hdb_error(self->hdb, NULL);
             return -1;
         }
     }
     else {
-        if (!tchdbout2(self->hdb, key)) {
+        if (!tchdbout(self->hdb, (void *)key, (int)key_size)) {
             set_hdb_error(self->hdb, key);
             return -1;
         }
@@ -592,18 +600,19 @@ put), this method raises KeyError if key is already in the database.");
 static PyObject *
 HDB_putkeep(HDB *self, PyObject *args)
 {
-    const char *key, *value;
+    char *key, *value;
+    Py_ssize_t key_size, value_size;
     PyObject *pykey, *pyvalue;
 
     if (!PyArg_ParseTuple(args, "OO:putkeep", &pykey, &pyvalue)) {
         return NULL;
     }
-    key = PyBytes_AsString(pykey);
-    value = PyBytes_AsString(pyvalue);
-    if (!(key && value)) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
+        PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tchdbputkeep2(self->hdb, key, value)) {
+    if (!tchdbputkeep(self->hdb, (void *)key, (int)key_size,
+                      (void *)value, (int)value_size)) {
         return set_hdb_error(self->hdb, key);
     }
     self->changed = true;
@@ -621,18 +630,19 @@ If there is no corresponding record, a new record is stored.");
 static PyObject *
 HDB_putcat(HDB *self, PyObject *args)
 {
-    const char *key, *value;
+    char *key, *value;
+    Py_ssize_t key_size, value_size;
     PyObject *pykey, *pyvalue;
 
     if (!PyArg_ParseTuple(args, "OO:putcat", &pykey, &pyvalue)) {
         return NULL;
     }
-    key = PyBytes_AsString(pykey);
-    value = PyBytes_AsString(pyvalue);
-    if (!(key && value)) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
+        PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tchdbputcat2(self->hdb, key, value)) {
+    if (!tchdbputcat(self->hdb, (void *)key, (int)key_size,
+                     (void *)value, (int)value_size)) {
         return set_hdb_error(self->hdb, NULL);
     }
     self->changed = true;
@@ -651,18 +661,19 @@ into the file at a ?blast? (when?, relation to sync()?).");
 static PyObject *
 HDB_putasync(HDB *self, PyObject *args)
 {
-    const char *key, *value;
+    char *key, *value;
+    Py_ssize_t key_size, value_size;
     PyObject *pykey, *pyvalue;
 
     if (!PyArg_ParseTuple(args, "OO:putasync", &pykey, &pyvalue)) {
         return NULL;
     }
-    key = PyBytes_AsString(pykey);
-    value = PyBytes_AsString(pyvalue);
-    if (!(key && value)) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
+        PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tchdbputasync2(self->hdb, key, value)) {
+    if (!tchdbputasync(self->hdb, (void *)key, (int)key_size,
+                       (void *)value, (int)value_size)) {
         return set_hdb_error(self->hdb, NULL);
     }
     self->changed = true;
@@ -697,7 +708,8 @@ is applied.");
 static PyObject *
 HDB_searchkeys(HDB *self, PyObject *args)
 {
-    const char *prefix;
+    char *prefix;
+    Py_ssize_t prefix_size;
     int max = -1;
     TCLIST *result;
     PyObject *pyprefix, *pyresult;
@@ -705,12 +717,11 @@ HDB_searchkeys(HDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O|i:searchkeys", &pyprefix, &max)) {
         return NULL;
     }
-    prefix = PyBytes_AsString(pyprefix);
-    if (!prefix) {
+    if (PyBytes_AsStringAndSize(pyprefix, &prefix, &prefix_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tchdbfwmkeys2(self->hdb, prefix, max);
+    result = tchdbfwmkeys(self->hdb, (void *)prefix, (int)prefix_size, max);
     Py_END_ALLOW_THREADS
     pyresult = tclist_to_frozenset(result);
     tclistdel(result);
