@@ -698,8 +698,7 @@ static PyObject *
 HDB_searchkeys(HDB *self, PyObject *args)
 {
     void *prefix;
-    int prefix_size;
-    int max = -1;
+    int prefix_size, max = -1;
     TCLIST *result;
     PyObject *pyprefix, *pyresult;
 
@@ -893,8 +892,7 @@ HDB_addint(HDB *self, PyObject *args)
 {
     PyObject *pykey;
     void *key;
-    int key_size;
-    int num, result;
+    int key_size, num, result;
 
     if (!PyArg_ParseTuple(args, "Oi:addint", &pykey, &num)) {
         return NULL;
