@@ -897,7 +897,7 @@ HDB_addint(HDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "Oi:addint", &pykey, &num)) {
         return NULL;
     }
-    if(bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     result = tchdbaddint(self->hdb, key, key_size, num);
@@ -935,7 +935,7 @@ HDB_adddouble(HDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "Od:adddouble", &pykey, &num)) {
         return NULL;
     }
-    if(bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     result = tchdbadddouble(self->hdb, key, key_size, num);

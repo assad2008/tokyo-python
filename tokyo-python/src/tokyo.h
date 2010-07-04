@@ -31,9 +31,9 @@
 
 #define TK_PY_MAX_DB_LEN ((unsigned long long)PY_SSIZE_T_MAX)
 
-#if SIZEOF_SIZE_T != SIZEOF_INT
-#define TK_PY_SSIZE_T_IS_NOT_INT
-#define TK_PY_MAX_STR_SIZE ((Py_ssize_t)INT_MAX)
+#if SIZEOF_SIZE_T > SIZEOF_INT
+#define TK_PY_SIZE_T_BIGGER_THAN_INT
+#define TK_PY_MAX_LEN ((Py_ssize_t)INT_MAX)
 #endif
 
 
@@ -103,22 +103,22 @@ PyUnicode_AsString(PyObject *unicode)
 
 /* convert a bytes object to a void ptr */
 int
-bytes_to_void(PyObject *pyvalue, void **value, int *value_size)
+bytes_to_void(PyObject *pyvalue, void **value, int *value_len)
 {
     char *tmp;
-    Py_ssize_t tmp_size;
+    Py_ssize_t tmp_len;
 
-    if (PyBytes_AsStringAndSize(pyvalue, &tmp, &tmp_size)) {
+    if (PyBytes_AsStringAndSize(pyvalue, &tmp, &tmp_len)) {
         return -1;
     }
-#ifdef TK_PY_SSIZE_T_IS_NOT_INT
-    if (tmp_size > TK_PY_MAX_STR_SIZE) {
+#ifdef TK_PY_SIZE_T_BIGGER_THAN_INT
+    if (tmp_len > TK_PY_MAX_LEN) {
         set_error(PyExc_OverflowError, "string is too large");
         return -1;
     }
 #endif
     *value = (void *)tmp;
-    *value_size = (int)tmp_size;
+    *value_len = (int)tmp_len;
     return 0;
 }
 
