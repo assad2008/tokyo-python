@@ -31,9 +31,10 @@ seq_to_tclist(PyObject *pyvalues)
 {
     const char *msg = "a sequence is required";
     PyObject *pyseq;
-    Py_ssize_t len, i, value_size;
+    Py_ssize_t len, i;
     TCLIST *values;
-    char *value;
+    void *value;
+    int value_size;
 
     if (PyBytes_Check(pyvalues) || PyUnicode_Check(pyvalues)) {
         set_error(PyExc_TypeError, msg);
@@ -44,6 +45,13 @@ seq_to_tclist(PyObject *pyvalues)
         return NULL;
     }
     len = PySequence_Fast_GET_SIZE(pyseq);
+#ifdef TK_PY_SIZE_T_BIGGER_THAN_INT
+    if (len > TK_PY_MAX_LEN) {
+        set_error(PyExc_OverflowError, "sequence is too large");
+        Py_DECREF(pyseq);
+        return NULL;
+    }
+#endif
     values = tclistnew2((int)len);
     if (!values) {
         set_error(Error, "could not create TCLIST, memory issue?");
@@ -51,13 +59,13 @@ seq_to_tclist(PyObject *pyvalues)
         return NULL;
     }
     for (i = 0; i < len; i++) {
-        if (PyBytes_AsStringAndSize(PySequence_Fast_GET_ITEM(pyseq, i), &value,
-                                    &value_size)) {
+        if (bytes_to_void(PySequence_Fast_GET_ITEM(pyseq, i), &value,
+                          &value_size)) {
             Py_DECREF(pyseq);
             tclistdel(values);
             return NULL;
         }
-        tclistpush(values, (void *)value, (int)value_size);
+        tclistpush(values, value, value_size);
     }
     Py_DECREF(pyseq);
     return values;
@@ -162,17 +170,17 @@ is positioned to the next available record.");
 static PyObject *
 BDBCursor_jump(BDBCursor *self, PyObject *args)
 {
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     PyObject *pykey;
 
     if (!PyArg_ParseTuple(args, "O:jump", &pykey)) {
         return NULL;
     }
-    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
-    if (!tcbdbcurjump(self->cur, (void *)key, (int)key_size)) {
+    if (!tcbdbcurjump(self->cur, key, key_size)) {
         return set_bdbcursor_move_error(self->bdb->bdb);
     }
     Py_RETURN_NONE;
@@ -224,18 +232,18 @@ Store a value at/around the cursor's current position.\n\
 static PyObject *
 BDBCursor_put(BDBCursor *self, PyObject *args)
 {
-    char *value;
-    Py_ssize_t value_size;
+    void *value;
+    int value_size;
     PyObject *pyvalue;
     int mode = BDBCPCURRENT;
 
     if (!PyArg_ParseTuple(args, "O|i:put", &pyvalue, &mode)) {
         return NULL;
     }
-    if (PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
+    if (bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tcbdbcurput(self->cur, (void *)value, (int)value_size, mode)) {
+    if (!tcbdbcurput(self->cur, value, value_size, mode)) {
         return set_bdb_error(self->bdb->bdb, NULL);
     }
     self->bdb->changed = true;
@@ -278,7 +286,7 @@ BDBCursor_key(BDBCursor *self)
     if (!key) {
         return set_bdb_error(self->bdb->bdb, NULL);
     }
-    pykey = PyBytes_FromStringAndSize((char *)key, (Py_ssize_t)key_size);
+    pykey = void_to_bytes(key, key_size);
     tcfree(key);
     return pykey;
 }
@@ -301,7 +309,7 @@ BDBCursor_value(BDBCursor *self)
     if (!value) {
         return set_bdb_error(self->bdb->bdb, NULL);
     }
-    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    pyvalue = void_to_bytes(value, value_size);
     tcfree(value);
     return pyvalue;
 }
@@ -325,10 +333,8 @@ BDBCursor_item(BDBCursor *self)
         set_bdb_error(self->bdb->bdb, NULL);
     }
     else {
-        pykey = PyBytes_FromStringAndSize((char *)tcxstrptr(key),
-                                          (Py_ssize_t)tcxstrsize(key));
-        pyvalue = PyBytes_FromStringAndSize((char *)tcxstrptr(value),
-                                            (Py_ssize_t)tcxstrsize(value));
+        pykey = tcxstr_to_bytes(key);
+        pyvalue = tcxstr_to_bytes(value);
         if (pykey && pyvalue) {
             pyresult = PyTuple_Pack(2, pykey, pyvalue);
         }
@@ -432,7 +438,7 @@ BDBIterKeys_tp_iternext(DBIter *self)
         }
         return set_bdb_error(bdb->bdb, NULL);
     }
-    pykey = PyBytes_FromStringAndSize((char *)key, (Py_ssize_t)key_size);
+    pykey = void_to_bytes(key, key_size);
     tcfree(key);
     if (!pykey) {
         return NULL;
@@ -494,7 +500,7 @@ BDBIterValues_tp_iternext(DBIter *self)
         }
         return set_bdb_error(bdb->bdb, NULL);
     }
-    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    pyvalue = void_to_bytes(value, value_size);
     tcfree(value);
     if (!pyvalue) {
         return NULL;
@@ -559,10 +565,8 @@ BDBIterItems_tp_iternext(DBIter *self)
         }
     }
     else {
-        pykey = PyBytes_FromStringAndSize((char *)tcxstrptr(key),
-                                          (Py_ssize_t)tcxstrsize(key));
-        pyvalue = PyBytes_FromStringAndSize((char *)tcxstrptr(value),
-                                            (Py_ssize_t)tcxstrsize(value));
+        pykey = tcxstr_to_bytes(key);
+        pyvalue = tcxstr_to_bytes(value);
         if (pykey && pyvalue) {
             pyresult = PyTuple_Pack(2, pykey, pyvalue);
         }
@@ -717,15 +721,13 @@ BDB_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 static
 int BDB_Contains(BDB *self, PyObject *pykey)
 {
-    char *key;
-    Py_ssize_t key_size;
-    void *value;
-    int value_size;
+    void *key, *value;
+    int key_size, value_size;
 
-    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
-    value = tcbdbget(self->bdb, (void *)key, (int)key_size, &value_size);
+    value = tcbdbget(self->bdb, key, key_size, &value_size);
     if (!value) {
         if (tcbdbecode(self->bdb) == TCENOREC) {
             return 0;
@@ -755,7 +757,7 @@ static PySequenceMethods BDB_tp_as_sequence = {
 static Py_ssize_t
 BDB_Length(BDB *self)
 {
-    return (Py_ssize_t)tcbdbrnum(self->bdb);
+    return DB_Length(tcbdbrnum(self->bdb));
 }
 
 
@@ -763,20 +765,18 @@ BDB_Length(BDB *self)
 static PyObject *
 BDB_GetItem(BDB *self, PyObject *pykey)
 {
-    char *key;
-    Py_ssize_t key_size;
-    void *value;
-    int value_size;
+    void *key, *value;
+    int key_size, value_size;
     PyObject *pyvalue;
 
-    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
-    value = tcbdbget(self->bdb, (void *)key, (int)key_size, &value_size);
+    value = tcbdbget(self->bdb, key, key_size, &value_size);
     if (!value) {
         return set_bdb_error(self->bdb, key);
     }
-    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    pyvalue = void_to_bytes(value, value_size);
     tcfree(value);
     return pyvalue;
 }
@@ -786,24 +786,23 @@ BDB_GetItem(BDB *self, PyObject *pykey)
 static int
 BDB_SetItem(BDB *self, PyObject *pykey, PyObject *pyvalue)
 {
-    char *key, *value;
-    Py_ssize_t key_size, value_size;
+    void *key, *value;
+    int key_size, value_size;
 
-    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
     if (pyvalue) {
-        if (PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
+        if (bytes_to_void(pyvalue, &value, &value_size)) {
             return -1;
         }
-        if (!tcbdbput(self->bdb, (void *)key, (int)key_size,
-                      (void *)value, (int)value_size)) {
+        if (!tcbdbput(self->bdb, key, key_size, value, value_size)) {
             set_bdb_error(self->bdb, NULL);
             return -1;
         }
     }
     else {
-        if (!tcbdbout(self->bdb, (void *)key, (int)key_size)) {
+        if (!tcbdbout(self->bdb, key, key_size)) {
             set_bdb_error(self->bdb, key);
             return -1;
         }
@@ -974,8 +973,8 @@ static PyObject *
 BDB_get(BDB *self, PyObject *args, PyObject *kwargs)
 {
     PyObject *pykey, *pyresult, *duplicate = Py_False;
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     TCLIST *result;
 
     static char *kwlist[] = {"key", "duplicate", NULL};
@@ -990,11 +989,11 @@ BDB_get(BDB *self, PyObject *args, PyObject *kwargs)
     if (duplicate == Py_False) {
         return BDB_GetItem(self, pykey);
     }
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if(bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcbdbget4(self->bdb, (void *)key, (int)key_size);
+    result = tcbdbget4(self->bdb, key, key_size);
     Py_END_ALLOW_THREADS
     if (!result) {
         return set_bdb_error(self->bdb, key);
@@ -1015,8 +1014,8 @@ static PyObject *
 BDB_remove(BDB *self, PyObject *args, PyObject *kwargs)
 {
     PyObject *pykey, *duplicate = Py_False;
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     bool result;
 
     static char *kwlist[] = {"key", "duplicate", NULL};
@@ -1034,11 +1033,11 @@ BDB_remove(BDB *self, PyObject *args, PyObject *kwargs)
         }
         Py_RETURN_NONE;
     }
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if(bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcbdbout3(self->bdb, (void *)key, (int)key_size);
+    result = tcbdbout3(self->bdb, key, key_size);
     Py_END_ALLOW_THREADS
     if (!result) {
         return set_bdb_error(self->bdb, key);
@@ -1058,8 +1057,8 @@ static PyObject *
 BDB_put(BDB *self, PyObject *args, PyObject *kwargs)
 {
     PyObject *pykey, *pyvalue, *duplicate = Py_False;
-    char *key, *value;
-    Py_ssize_t key_size, value_size;
+    void *key, *value;
+    int key_size, value_size;
 
     static char *kwlist[] = {"key", "value", "duplicate", NULL};
 
@@ -1076,12 +1075,11 @@ BDB_put(BDB *self, PyObject *args, PyObject *kwargs)
         }
         Py_RETURN_NONE;
     }
-    if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
-        PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
+    if (bytes_to_void(pykey, &key, &key_size) ||
+        bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tcbdbputdup(self->bdb, (void *)key, (int)key_size,
-                     (void *)value, (int)value_size)) {
+    if (!tcbdbputdup(self->bdb, key, key_size, value, value_size)) {
         return set_bdb_error(self->bdb, NULL);
     }
     self->changed = true;
@@ -1099,19 +1097,18 @@ put), this method raises KeyError if key is already in the database.");
 static PyObject *
 BDB_putkeep(BDB *self, PyObject *args)
 {
-    char *key, *value;
-    Py_ssize_t key_size, value_size;
+    void *key, *value;
+    int key_size, value_size;
     PyObject *pykey, *pyvalue;
 
     if (!PyArg_ParseTuple(args, "OO:putkeep", &pykey, &pyvalue)) {
         return NULL;
     }
-    if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
-        PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
+    if (bytes_to_void(pykey, &key, &key_size) ||
+        bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tcbdbputkeep(self->bdb, (void *)key, (int)key_size,
-                      (void *)value, (int)value_size)) {
+    if (!tcbdbputkeep(self->bdb, key, key_size, value, value_size)) {
         return set_bdb_error(self->bdb, key);
     }
     self->changed = true;
@@ -1129,19 +1126,18 @@ If there is no corresponding record, a new record is stored.");
 static PyObject *
 BDB_putcat(BDB *self, PyObject *args)
 {
-    char *key, *value;
-    Py_ssize_t key_size, value_size;
+    void *key, *value;
+    int key_size, value_size;
     PyObject *pykey, *pyvalue;
 
     if (!PyArg_ParseTuple(args, "OO:putcat", &pykey, &pyvalue)) {
         return NULL;
     }
-    if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
-        PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
+    if (bytes_to_void(pykey, &key, &key_size) ||
+        bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tcbdbputcat(self->bdb, (void *)key, (int)key_size,
-                     (void *)value, (int)value_size)) {
+    if (!tcbdbputcat(self->bdb, key, key_size, value, value_size)) {
         return set_bdb_error(self->bdb, NULL);
     }
     self->changed = true;
@@ -1158,8 +1154,8 @@ PyDoc_STRVAR(BDB_putdup_doc,
 static PyObject *
 BDB_putdup(BDB *self, PyObject *args)
 {
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     TCLIST *values;
     PyObject *pykey, *pyvalues;
     bool result;
@@ -1167,7 +1163,7 @@ BDB_putdup(BDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "OO:putdup", &pykey, &pyvalues)) {
         return NULL;
     }
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if(bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     values = seq_to_tclist(pyvalues);
@@ -1175,7 +1171,7 @@ BDB_putdup(BDB *self, PyObject *args)
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcbdbputdup3(self->bdb, (void *)key, (int)key_size, values);
+    result = tcbdbputdup3(self->bdb, key, key_size, values);
     Py_END_ALLOW_THREADS
     tclistdel(values);
     if (!result) {
@@ -1213,20 +1209,19 @@ is applied.");
 static PyObject *
 BDB_searchkeys(BDB *self, PyObject *args)
 {
-    char *prefix;
-    Py_ssize_t prefix_size;
-    int max = -1;
+    void *prefix;
+    int prefix_size, max = -1;
     TCLIST *result;
     PyObject *pyprefix, *pyresult;
 
     if (!PyArg_ParseTuple(args, "O|i:searchkeys", &pyprefix, &max)) {
         return NULL;
     }
-    if (PyBytes_AsStringAndSize(pyprefix, &prefix, &prefix_size)) {
+    if (bytes_to_void(pyprefix, &prefix, &prefix_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcbdbfwmkeys(self->bdb, (void *)prefix, (int)prefix_size, max);
+    result = tcbdbfwmkeys(self->bdb, prefix, prefix_size, max);
     Py_END_ALLOW_THREADS
     pyresult = tclist_to_frozenset(result);
     tclistdel(result);
@@ -1243,9 +1238,8 @@ PyDoc_STRVAR(BDB_range_doc,
 static PyObject *
 BDB_range(BDB *self, PyObject *args, PyObject *kwargs)
 {
-    char *begin = NULL, *end = NULL;
-    Py_ssize_t begin_size, end_size;
-    int max = -1;
+    void *begin = NULL, *end = NULL;
+    int begin_size, end_size, max = -1;
     TCLIST *result;
     PyObject *pybegin = Py_None, *pyend = Py_None, *pyresult;
 
@@ -1256,18 +1250,17 @@ BDB_range(BDB *self, PyObject *args, PyObject *kwargs)
         return NULL;
     }
     if (pybegin != Py_None) {
-        if (PyBytes_AsStringAndSize(pybegin, &begin, &begin_size)) {
+        if (bytes_to_void(pybegin, &begin, &begin_size)) {
             return NULL;
         }
     }
     if (pyend != Py_None) {
-        if (PyBytes_AsStringAndSize(pyend, &end, &end_size)) {
+        if (bytes_to_void(pyend, &end, &end_size)) {
             return NULL;
         }
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcbdbrange(self->bdb, (void *)begin, (int)begin_size, 1,
-                        (void *)end, (int)end_size, 1, max);
+    result = tcbdbrange(self->bdb, begin, begin_size, 1, end, end_size, 1, max);
     Py_END_ALLOW_THREADS
     pyresult = tclist_to_frozenset(result);
     tclistdel(result);
@@ -1531,17 +1524,16 @@ static PyObject *
 BDB_addint(BDB *self, PyObject *args)
 {
     PyObject *pykey;
-    char *key;
-    Py_ssize_t key_size;
-    int num, result, ecode;
+    void *key;
+    int key_size, num, result, ecode;
 
     if (!PyArg_ParseTuple(args, "Oi:addint", &pykey, &num)) {
         return NULL;
     }
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
-    result = tcbdbaddint(self->bdb, (void *)key, (int)key_size, num);
+    result = tcbdbaddint(self->bdb, key, key_size, num);
     if (result == INT_MIN) {
         ecode = tcbdbecode(self->bdb);
         if (ecode != TCESUCCESS && ecode != TCENOREC) {
@@ -1572,17 +1564,17 @@ static PyObject *
 BDB_adddouble(BDB *self, PyObject *args)
 {
     PyObject *pykey;
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     double num, result;
 
     if (!PyArg_ParseTuple(args, "Od:adddouble", &pykey, &num)) {
         return NULL;
     }
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
-    result = tcbdbadddouble(self->bdb, (void *)key, (int)key_size, num);
+    result = tcbdbadddouble(self->bdb, key, key_size, num);
     if (Py_IS_NAN(result)) {
         return set_bdb_error(self->bdb, key);
     }
