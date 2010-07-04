@@ -1541,7 +1541,7 @@ BDB_addint(BDB *self, PyObject *args)
     if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
         return NULL;
     }
-    result = tcbdbaddint(self->bdb, key, (int)key_size, num);
+    result = tcbdbaddint(self->bdb, (void *)key, (int)key_size, num);
     if (result == INT_MIN) {
         ecode = tcbdbecode(self->bdb);
         if (ecode != TCESUCCESS && ecode != TCENOREC) {
@@ -1582,7 +1582,7 @@ BDB_adddouble(BDB *self, PyObject *args)
     if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
         return NULL;
     }
-    result = tcbdbadddouble(self->bdb, key, (int)key_size, num);
+    result = tcbdbadddouble(self->bdb, (void *)key, (int)key_size, num);
     if (Py_IS_NAN(result)) {
         return set_bdb_error(self->bdb, key);
     }

@@ -913,7 +913,7 @@ HDB_addint(HDB *self, PyObject *args)
     if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
         return NULL;
     }
-    result = tchdbaddint(self->hdb, key, (int)key_size, num);
+    result = tchdbaddint(self->hdb, (void *)key, (int)key_size, num);
     if (result == INT_MIN && tchdbecode(self->hdb) != TCESUCCESS) {
         return set_hdb_error(self->hdb, key);
     }
@@ -951,7 +951,7 @@ HDB_adddouble(HDB *self, PyObject *args)
     if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
         return NULL;
     }
-    result = tchdbadddouble(self->hdb, key, (int)key_size, num);
+    result = tchdbadddouble(self->hdb, (void *)key, (int)key_size, num);
     if (Py_IS_NAN(result)) {
         return set_hdb_error(self->hdb, key);
     }
