@@ -255,14 +255,15 @@ RDBBase_tp_iter(RDBBase *self)
 static PyObject *
 RDBBase_tp_iternext(RDBBase *self)
 {
-    const char *key;
+    void *key;
+    int key_size;
     PyObject *pykey;
 
     if (self->changed) {
         return set_error(Error, "DB changed during iteration");
     }
     Py_BEGIN_ALLOW_THREADS
-    key = tcrdbiternext2(self->rdb);
+    key = tcrdbiternext(self->rdb, &key_size);
     Py_END_ALLOW_THREADS
     if (!key) {
         if (tcrdbecode(self->rdb) == TTENOREC) {
@@ -270,8 +271,8 @@ RDBBase_tp_iternext(RDBBase *self)
         }
         return set_rdb_error(self->rdb, NULL);
     }
-    pykey = PyBytes_FromString(key);
-    tcfree((void *)key);
+    pykey = PyBytes_FromStringAndSize((char *)key, (Py_ssize_t)key_size);
+    tcfree(key);
     return pykey;
 }
 
@@ -396,7 +397,8 @@ is applied.");
 static PyObject *
 RDBBase_searchkeys(RDBBase *self, PyObject *args)
 {
-    const char *prefix;
+    char *prefix;
+    Py_ssize_t prefix_size;
     int max = -1;
     TCLIST *result;
     PyObject *pyprefix, *pyresult;
@@ -404,12 +406,11 @@ RDBBase_searchkeys(RDBBase *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O|i:searchkeys", &pyprefix, &max)) {
         return NULL;
     }
-    prefix = PyBytes_AsString(pyprefix);
-    if (!prefix) {
+    if (PyBytes_AsStringAndSize(pyprefix, &prefix, &prefix_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcrdbfwmkeys2(self->rdb, prefix, max);
+    result = tcrdbfwmkeys(self->rdb, (void *)prefix, (int)prefix_size, max);
     Py_END_ALLOW_THREADS
     pyresult = tclist_to_frozenset(result);
     tclistdel(result);
