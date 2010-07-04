@@ -182,7 +182,11 @@ PyDoc_STRVAR(DBIter_length_hint_doc,
 static PyObject *
 DBIter_length_hint(DBIter *self)
 {
-    return PyLong_FromSsize_t(PyMapping_Length(self->db));
+    Py_ssize_t len = PyMapping_Length(self->db);
+    if (len < 0) {
+        return NULL;
+    }
+    return PyLong_FromSsize_t(len);
 }
 
 

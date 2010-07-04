@@ -29,6 +29,14 @@
 #include <tcutil.h>
 
 
+#define TK_PY_MAX_DB_LEN ((unsigned long long)PY_SSIZE_T_MAX)
+
+#if SIZEOF_SIZE_T != SIZEOF_INT
+#define TK_PY_SSIZE_T_IS_NOT_INT
+#define TK_PY_MAX_STR_SIZE ((Py_ssize_t)INT_MAX)
+#endif
+
+
 /*******************************************************************************
 * objects
 *******************************************************************************/
@@ -93,6 +101,44 @@ PyUnicode_AsString(PyObject *unicode)
 #endif
 
 
+/* convert a bytes object to a void ptr */
+int
+bytes_to_void(PyObject *pyvalue, void **value, int *value_size)
+{
+    char *tmp;
+    Py_ssize_t tmp_size;
+
+    if (PyBytes_AsStringAndSize(pyvalue, &tmp, &tmp_size)) {
+        return -1;
+    }
+#ifdef TK_PY_SSIZE_T_IS_NOT_INT
+    if (tmp_size > TK_PY_MAX_STR_SIZE) {
+        set_error(PyExc_OverflowError, "string is too large");
+        return -1;
+    }
+#endif
+    *value = (void *)tmp;
+    *value_size = (int)tmp_size;
+    return 0;
+}
+
+
+/* convert a void ptr to a bytes object */
+PyObject *
+void_to_bytes(const void *value, int value_size)
+{
+    return PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+}
+
+
+/* convert a TCXSTR to a bytes object */
+PyObject *
+tcxstr_to_bytes(TCXSTR *value)
+{
+    return void_to_bytes(tcxstrptr(value), tcxstrsize(value));
+}
+
+
 /* convert a TCLIST to a fozenset */
 PyObject *
 tclist_to_frozenset(TCLIST *result)
@@ -108,8 +154,7 @@ tclist_to_frozenset(TCLIST *result)
     len = tclistnum(result);
     for (i = 0; i < len; i++) {
         value = tclistval(result, i, &value_size);
-        pyvalue = PyBytes_FromStringAndSize((char *)value,
-                                            (Py_ssize_t)value_size);
+        pyvalue = void_to_bytes(value, value_size);
         if (!pyvalue) {
             Py_DECREF(pyresult);
             return NULL;
@@ -140,8 +185,7 @@ tclist_to_tuple(TCLIST *result)
     }
     for (i = 0; i < len; i++) {
         value = tclistval(result, i, &value_size);
-        pyvalue = PyBytes_FromStringAndSize((char *)value,
-                                            (Py_ssize_t)value_size);
+        pyvalue = void_to_bytes(value, value_size);
         if (!pyvalue) {
             Py_DECREF(pyresult);
             return NULL;
@@ -167,9 +211,8 @@ tcmap_to_dict(TCMAP *result)
     tcmapiterinit(result);
     while ((key = tcmapiternext(result, &key_size)) != NULL) {
         value = tcmapget(result, key, key_size, &value_size);
-        pykey = PyBytes_FromStringAndSize((char *)key, (Py_ssize_t)key_size);
-        pyvalue = PyBytes_FromStringAndSize((char *)value,
-                                            (Py_ssize_t)value_size);
+        pykey = void_to_bytes(key, key_size);
+        pyvalue = void_to_bytes(value, value_size);
         if (!(pykey && pyvalue)) {
             Py_XDECREF(pykey);
             Py_XDECREF(pyvalue);
@@ -195,8 +238,9 @@ dict_to_tcmap(PyObject *pyitems)
 {
     TCMAP *items;
     PyObject *pykey, *pyvalue;
-    char *key, *value;
-    Py_ssize_t key_size, value_size, pos = 0;
+    Py_ssize_t pos = 0;
+    void *key, *value;
+    int key_size, value_size;
 
     if (!PyDict_Check(pyitems)) {
         set_error(PyExc_TypeError, "a dict is required");
@@ -208,13 +252,19 @@ dict_to_tcmap(PyObject *pyitems)
         return NULL;
     }
     while (PyDict_Next(pyitems, &pos, &pykey, &pyvalue)) {
-        if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
-            PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
+        if (bytes_to_void(pykey, &key, &key_size) ||
+            bytes_to_void(pyvalue, &value, &value_size)) {
             tcmapdel(items);
             return NULL;
         }
-        tcmapput(items, (void *)key, (int)key_size,
-                 (void *)value, (int)value_size);
+        /* XXX: not sure about the following check
+        if (strlen(key) != (size_t)key_size) {
+            set_error(PyExc_TypeError, "value's keys must be without null bytes");
+            tcmapdel(items);
+            return NULL;
+        }
+        */
+        tcmapput(items, key, key_size, value, value_size);
     }
     return items;
 }
@@ -242,6 +292,18 @@ merge_put_args(const char *name, PyObject *pyvalue, PyObject *kwargs)
         return PyErr_Format(PyExc_TypeError, "%s() takes at least 2 arguments",
                             name);
     }
+}
+
+
+/* used by *DB_tp_as_mapping.mp_length */
+Py_ssize_t
+DB_Length(unsigned long long len)
+{
+    if (len > TK_PY_MAX_DB_LEN) {
+        set_error(PyExc_OverflowError, "database is too large for Python!");
+        return -1;
+    }
+    return (Py_ssize_t)len;
 }
 
 
