@@ -27,7 +27,7 @@ ids_to_frozenset(uint64_t *result, int result_size)
         return NULL;
     }
     for(i = 0; i < result_size; i++){
-        pyid = PyLong_FromUnsignedLongLong(result[i]);
+        pyid = PyLong_FromLongLong((long long)result[i]);
         if (!pyid) {
             Py_DECREF(pyresult);
             return NULL;
@@ -127,7 +127,7 @@ FDBIterValues_tp_iternext(DBIter *self)
     FDB *fdb = (FDB *)self->db;
     long long key;
     int value_size;
-    const char *value;
+    void *value;
     PyObject *pyvalue;
 
     if (fdb->changed) {
@@ -141,8 +141,8 @@ FDBIterValues_tp_iternext(DBIter *self)
         return set_fdb_error(fdb->fdb, 0);
     }
     value = tcfdbget(fdb->fdb, key, &value_size);
-    pyvalue = PyBytes_FromStringAndSize(value, (Py_ssize_t)value_size);
-    tcfree((void *)value);
+    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    tcfree(value);
     return pyvalue;
 }
 
@@ -187,7 +187,7 @@ FDBIterItems_tp_iternext(DBIter *self)
     FDB *fdb = (FDB *)self->db;
     long long key;
     int value_size;
-    const char *value;
+    void *value;
     PyObject *pykey, *pyvalue, *pyresult = NULL;
 
     if (fdb->changed) {
@@ -202,13 +202,13 @@ FDBIterItems_tp_iternext(DBIter *self)
     }
     value = tcfdbget(fdb->fdb, key, &value_size);
     pykey = PyLong_FromLongLong(key);
-    pyvalue = PyBytes_FromStringAndSize(value, (Py_ssize_t)value_size);
+    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
     if (pykey && pyvalue) {
         pyresult = PyTuple_Pack(2, pykey, pyvalue);
     }
     Py_XDECREF(pykey);
     Py_XDECREF(pyvalue);
-    tcfree((void *)value);
+    tcfree(value);
     return pyresult;
 }
 
@@ -302,7 +302,7 @@ int FDB_Contains(FDB *self, PyObject *pykey)
 {
     long long key;
     int value_size;
-    const char *value;
+    void *value;
 
     key = PyLong_AsLongLong(pykey);
     if (key == -1 && PyErr_Occurred()) {
@@ -316,7 +316,7 @@ int FDB_Contains(FDB *self, PyObject *pykey)
         set_fdb_error(self->fdb, 0);
         return -1;
     }
-    tcfree((void *)value);
+    tcfree(value);
     return 1;
 }
 
@@ -348,7 +348,7 @@ FDB_GetItem(FDB *self, PyObject *pykey)
 {
     long long key;
     int value_size;
-    const char *value;
+    void *value;
     PyObject *pyvalue;
 
     key = PyLong_AsLongLong(pykey);
@@ -359,8 +359,8 @@ FDB_GetItem(FDB *self, PyObject *pykey)
     if (!value) {
         return set_fdb_error(self->fdb, key);
     }
-    pyvalue = PyBytes_FromStringAndSize(value, (Py_ssize_t)value_size);
-    tcfree((void *)value);
+    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    tcfree(value);
     return pyvalue;
 }
 
@@ -381,7 +381,7 @@ FDB_SetItem(FDB *self, PyObject *pykey, PyObject *pyvalue)
         if(PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
             return -1;
         }
-        if (!tcfdbput(self->fdb, key, value, (int)value_size)) {
+        if (!tcfdbput(self->fdb, key, (void *)value, (int)value_size)) {
             set_fdb_error(self->fdb, 0);
             return -1;
         }
@@ -629,7 +629,7 @@ FDB_putkeep(FDB *self, PyObject *args)
     if(PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tcfdbputkeep(self->fdb, key, value, (int)value_size)) {
+    if (!tcfdbputkeep(self->fdb, key, (void *)value, (int)value_size)) {
         return set_fdb_error(self->fdb, key);
     }
     self->changed = true;
@@ -658,7 +658,7 @@ FDB_putcat(FDB *self, PyObject *args)
     if(PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tcfdbputcat(self->fdb, key, value, (int)value_size)) {
+    if (!tcfdbputcat(self->fdb, key, (void *)value, (int)value_size)) {
         return set_fdb_error(self->fdb, 0);
     }
     self->changed = true;

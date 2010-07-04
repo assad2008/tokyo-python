@@ -994,7 +994,7 @@ BDB_get(BDB *self, PyObject *args, PyObject *kwargs)
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcbdbget4(self->bdb, key, (int)key_size);
+    result = tcbdbget4(self->bdb, (void *)key, (int)key_size);
     Py_END_ALLOW_THREADS
     if (!result) {
         return set_bdb_error(self->bdb, key);
@@ -1038,7 +1038,7 @@ BDB_remove(BDB *self, PyObject *args, PyObject *kwargs)
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcbdbout3(self->bdb, key, (int)key_size);
+    result = tcbdbout3(self->bdb, (void *)key, (int)key_size);
     Py_END_ALLOW_THREADS
     if (!result) {
         return set_bdb_error(self->bdb, key);
@@ -1175,7 +1175,7 @@ BDB_putdup(BDB *self, PyObject *args)
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcbdbputdup3(self->bdb, key, (int)key_size, values);
+    result = tcbdbputdup3(self->bdb, (void *)key, (int)key_size, values);
     Py_END_ALLOW_THREADS
     tclistdel(values);
     if (!result) {
