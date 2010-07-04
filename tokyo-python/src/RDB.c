@@ -17,15 +17,17 @@ http://1978th.net/tokyotyrant/spex.html#tcrdbapi");
 static int
 RDB_Contains(RDB *self, PyObject *pykey)
 {
-    const char *key, *value;
+    char *key;
+    Py_ssize_t key_size;
+    void *value;
+    int value_size;
     RDBBase *rdbbase = (RDBBase *)self;
 
-    key = PyBytes_AsString(pykey);
-    if (!key) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
         return -1;
     }
     Py_BEGIN_ALLOW_THREADS
-    value = tcrdbget2(rdbbase->rdb, key);
+    value = tcrdbget(rdbbase->rdb, (void *)key, (int)key_size, &value_size);
     Py_END_ALLOW_THREADS
     if (!value) {
         if (tcrdbecode(rdbbase->rdb) == TTENOREC) {
@@ -34,7 +36,7 @@ RDB_Contains(RDB *self, PyObject *pykey)
         set_rdb_error(rdbbase->rdb, NULL);
         return -1;
     }
-    tcfree((void *)value);
+    tcfree(value);
     return 1;
 }
 
@@ -56,22 +58,24 @@ static PySequenceMethods RDB_tp_as_sequence = {
 static PyObject *
 RDB_GetItem(RDB *self, PyObject *pykey)
 {
-    const char *key, *value;
+    char *key;
+    Py_ssize_t key_size;
+    void *value;
+    int value_size;
     PyObject *pyvalue;
     RDBBase *rdbbase = (RDBBase *)self;
 
-    key = PyBytes_AsString(pykey);
-    if (!key) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    value = tcrdbget2(rdbbase->rdb, key);
+    value = tcrdbget(rdbbase->rdb, (void *)key, (int)key_size, &value_size);
     Py_END_ALLOW_THREADS
     if (!value) {
         return set_rdb_error(rdbbase->rdb, key);
     }
-    pyvalue = PyBytes_FromString(value);
-    tcfree((void *)value);
+    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    tcfree(value);
     return pyvalue;
 }
 
@@ -80,21 +84,21 @@ RDB_GetItem(RDB *self, PyObject *pykey)
 static int
 RDB_SetItem(RDB *self, PyObject *pykey, PyObject *pyvalue)
 {
-    const char *key, *value;
+    char *key, *value;
+    Py_ssize_t key_size, value_size;
     bool result;
     RDBBase *rdbbase = (RDBBase *)self;
 
-    key = PyBytes_AsString(pykey);
-    if (!key) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
         return -1;
     }
     if (pyvalue) {
-        value = PyBytes_AsString(pyvalue);
-        if (!value) {
+        if (PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
             return -1;
         }
         Py_BEGIN_ALLOW_THREADS
-        result = tcrdbput2(rdbbase->rdb, key, value);
+        result = tcrdbput(rdbbase->rdb, (void *)key, (int)key_size,
+                          (void *)value, (int)value_size);
         Py_END_ALLOW_THREADS
         if (!result) {
             set_rdb_error(rdbbase->rdb, NULL);
@@ -103,7 +107,7 @@ RDB_SetItem(RDB *self, PyObject *pykey, PyObject *pyvalue)
     }
     else {
         Py_BEGIN_ALLOW_THREADS
-        result = tcrdbout2(rdbbase->rdb, key);
+        result = tcrdbout(rdbbase->rdb, (void *)key, (int)key_size);
         Py_END_ALLOW_THREADS
         if (!result) {
             set_rdb_error(rdbbase->rdb, key);
@@ -217,7 +221,8 @@ put), this method raises KeyError if key is already in the database.");
 static PyObject *
 RDB_putkeep(RDB *self, PyObject *args)
 {
-    const char *key, *value;
+    char *key, *value;
+    Py_ssize_t key_size, value_size;
     PyObject *pykey, *pyvalue;
     bool result;
     RDBBase *rdbbase = (RDBBase *)self;
@@ -225,13 +230,13 @@ RDB_putkeep(RDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "OO:putkeep", &pykey, &pyvalue)) {
         return NULL;
     }
-    key = PyBytes_AsString(pykey);
-    value = PyBytes_AsString(pyvalue);
-    if (!(key && value)) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
+        PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcrdbputkeep2(rdbbase->rdb, key, value);
+    result = tcrdbputkeep(rdbbase->rdb, (void *)key, (int)key_size,
+                          (void *)value, (int)value_size);
     Py_END_ALLOW_THREADS
     if (!result) {
         return set_rdb_error(rdbbase->rdb, key);
@@ -251,7 +256,8 @@ If there is no corresponding record, a new record is stored.");
 static PyObject *
 RDB_putcat(RDB *self, PyObject *args)
 {
-    const char *key, *value;
+    char *key, *value;
+    Py_ssize_t key_size, value_size;
     PyObject *pykey, *pyvalue;
     bool result;
     RDBBase *rdbbase = (RDBBase *)self;
@@ -259,13 +265,13 @@ RDB_putcat(RDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "OO:putcat", &pykey, &pyvalue)) {
         return NULL;
     }
-    key = PyBytes_AsString(pykey);
-    value = PyBytes_AsString(pyvalue);
-    if (!(key && value)) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
+        PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcrdbputcat2(rdbbase->rdb, key, value);
+    result = tcrdbputcat(rdbbase->rdb, (void *)key, (int)key_size,
+                         (void *)value, (int)value_size);
     Py_END_ALLOW_THREADS
     if (!result) {
         return set_rdb_error(rdbbase->rdb, NULL);
@@ -285,19 +291,20 @@ respond (non-blocking).");
 static PyObject *
 RDB_putnb(RDB *self, PyObject *args)
 {
-    const char *key, *value;
+    char *key, *value;
+    Py_ssize_t key_size, value_size;
     PyObject *pykey, *pyvalue;
     RDBBase *rdbbase = (RDBBase *)self;
 
     if (!PyArg_ParseTuple(args, "OO:putnb", &pykey, &pyvalue)) {
         return NULL;
     }
-    key = PyBytes_AsString(pykey);
-    value = PyBytes_AsString(pyvalue);
-    if (!(key && value)) {
+    if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
+        PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tcrdbputnr2(rdbbase->rdb, key, value)) {
+    if (!tcrdbputnr(rdbbase->rdb, (void *)key, (int)key_size,
+                    (void *)value, (int)value_size)) {
         return set_rdb_error(rdbbase->rdb, NULL);
     }
     rdbbase->changed = true;
@@ -323,10 +330,11 @@ RDB_addint(RDB *self, PyObject *args)
 {
     PyObject *pykey;
     //char *key;
-    char *key, *value;
+    char *key;
+    void *value;
     Py_ssize_t key_size;
     //int num, result, ecode;
-    int num, result;
+    int num, result, value_size;
     RDBBase *rdbbase = (RDBBase *)self;
 
     if (!PyArg_ParseTuple(args, "Oi:addint", &pykey, &num)) {
@@ -350,9 +358,9 @@ RDB_addint(RDB *self, PyObject *args)
     //      TODO: report upstream
     if (result == INT_MIN && tcrdbecode(rdbbase->rdb) != TTESUCCESS) {
         Py_BEGIN_ALLOW_THREADS
-        value = tcrdbget2(rdbbase->rdb, key);
+        value = tcrdbget(rdbbase->rdb, (void *)key, (int)key_size, &value_size);
         Py_END_ALLOW_THREADS
-        if (strcmp(value, "")) {
+        if (strcmp((char *)value, "")) {
             return set_rdb_error(rdbbase->rdb, key);
         }
     }

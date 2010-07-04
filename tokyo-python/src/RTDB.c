@@ -280,7 +280,7 @@ int RTDB_Contains(RTDB *self, PyObject *pykey)
         return -1;
     }
     Py_BEGIN_ALLOW_THREADS
-    value = tcrdbtblget(rdbbase->rdb, key, (int)key_size);
+    value = tcrdbtblget(rdbbase->rdb, (void *)key, (int)key_size);
     Py_END_ALLOW_THREADS
     if (!value) {
         if (tcrdbecode(rdbbase->rdb) == TTENOREC) {
@@ -321,7 +321,7 @@ RTDB_GetItem(RTDB *self, PyObject *pykey)
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    value = tcrdbtblget(rdbbase->rdb, key, (int)key_size);
+    value = tcrdbtblget(rdbbase->rdb, (void *)key, (int)key_size);
     Py_END_ALLOW_THREADS
     if (!value) {
         return set_rdb_error(rdbbase->rdb, key);
@@ -351,7 +351,7 @@ RTDB_SetItem(RTDB *self, PyObject *pykey, PyObject *pyvalue)
             return -1;
         }
         Py_BEGIN_ALLOW_THREADS
-        result = tcrdbtblput(rdbbase->rdb, key, (int)key_size, value);
+        result = tcrdbtblput(rdbbase->rdb, (void *)key, (int)key_size, value);
         Py_END_ALLOW_THREADS
         if (!result) {
             tcmapdel(value);
@@ -362,7 +362,7 @@ RTDB_SetItem(RTDB *self, PyObject *pykey, PyObject *pyvalue)
     }
     else {
         Py_BEGIN_ALLOW_THREADS
-        result = tcrdbtblout(rdbbase->rdb, key, (int)key_size);
+        result = tcrdbtblout(rdbbase->rdb, (void *)key, (int)key_size);
         Py_END_ALLOW_THREADS
         if (!result) {
             set_rdb_error(rdbbase->rdb, key);
@@ -504,7 +504,7 @@ RTDB_putkeep(RTDB *self, PyObject *args, PyObject *kwargs)
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcrdbtblputkeep(rdbbase->rdb, key, (int)key_size, value);
+    result = tcrdbtblputkeep(rdbbase->rdb, (void *)key, (int)key_size, value);
     tcmapdel(value);
     Py_END_ALLOW_THREADS
     if (!result) {
@@ -548,7 +548,7 @@ RTDB_putcat(RTDB *self, PyObject *args, PyObject *kwargs)
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcrdbtblputcat(rdbbase->rdb, key, (int)key_size, value);
+    result = tcrdbtblputcat(rdbbase->rdb, (void *)key, (int)key_size, value);
     tcmapdel(value);
     Py_END_ALLOW_THREADS
     if (!result) {
