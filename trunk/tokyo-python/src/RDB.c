@@ -336,7 +336,7 @@ RDB_addint(RDB *self, PyObject *args)
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcrdbaddint(rdbbase->rdb, key, (int)key_size, num);
+    result = tcrdbaddint(rdbbase->rdb, (void *)key, (int)key_size, num);
     Py_END_ALLOW_THREADS
     //if (result == INT_MIN) {
     //    ecode = tcrdbecode(self->rdb);
@@ -392,7 +392,7 @@ RDB_adddouble(RDB *self, PyObject *args)
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcrdbadddouble(rdbbase->rdb, key, (int)key_size, num);
+    result = tcrdbadddouble(rdbbase->rdb, (void *)key, (int)key_size, num);
     Py_END_ALLOW_THREADS
     if (Py_IS_NAN(result)) {
         return set_rdb_error(rdbbase->rdb, key);
