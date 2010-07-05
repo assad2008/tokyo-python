@@ -69,9 +69,9 @@ TDBQuery_process_cb(const void *key, int key_size, TCMAP *value, void *op)
         goto fail;
     }
 #if PY_MAJOR_VERSION >= 3
-    if(PyLong_Check(pyresult)) {
+    if (PyLong_Check(pyresult)) {
 #else
-    if(PyInt_Check(pyresult)) {
+    if (PyInt_Check(pyresult)) {
 #endif
         result = (int)PyLong_AsLong(pyresult);
         if (result == -1 && PyErr_Occurred()) {
@@ -759,7 +759,7 @@ int TDB_Contains(TDB *self, PyObject *pykey)
     int key_size;
     TCMAP *value;
 
-    if(bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
     value = tctdbget(self->tdb, key, key_size);
@@ -805,7 +805,7 @@ TDB_GetItem(TDB *self, PyObject *pykey)
     TCMAP *value;
     PyObject *pyvalue;
 
-    if(bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     value = tctdbget(self->tdb, key, key_size);
@@ -826,7 +826,7 @@ TDB_SetItem(TDB *self, PyObject *pykey, PyObject *pyvalue)
     int key_size;
     TCMAP *value;
 
-    if(bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
     if (pyvalue) {
@@ -1091,7 +1091,7 @@ TDB_putkeep(TDB *self, PyObject *args, PyObject *kwargs)
     if (!pyvalue) {
         return NULL;
     }
-    if(bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     value = dict_to_tcmap(pyvalue);
@@ -1131,7 +1131,7 @@ TDB_putcat(TDB *self, PyObject *args, PyObject *kwargs)
     if (!pyvalue) {
         return NULL;
     }
-    if(bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     value = dict_to_tcmap(pyvalue);
