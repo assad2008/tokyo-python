@@ -650,13 +650,10 @@ RTDB_metasearch(RTDB *notused, PyObject *args)
         return NULL;
     }
     len = PySequence_Fast_GET_SIZE(pyseq);
-#ifdef TK_PY_SIZE_T_BIGGER_THAN_INT
-    if (len > TK_PY_MAX_LEN) {
-        set_error(PyExc_OverflowError, "sequence is too large");
+    if (check_py_ssize_t_len(len, pyseq)) {
         Py_DECREF(pyseq);
         return NULL;
     }
-#endif
     queries = (RDBQRY **)tcmalloc((size_t)len * sizeof(RDBQRY *));
     if (!queries) {
         Py_DECREF(pyseq);
