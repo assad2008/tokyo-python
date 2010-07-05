@@ -15,11 +15,24 @@ set_fdb_error(TCFDB *fdb, long long key)
 }
 
 
+#define FDB_MAX_ID ((unsigned long long)INT64_MAX)
+long long
+uint64_to_int64(unsigned long long id)
+{
+    if (id > FDB_MAX_ID) {
+        set_error(PyExc_OverflowError, "id is greater than maximum");
+        return -1;
+    }
+    return (long long)id;
+}
+
+
 /* convert an array of ids to a fozenset */
 PyObject *
 ids_to_frozenset(uint64_t *result, int result_size)
 {
     int i;
+    long long id;
     PyObject *pyresult, *pyid;
 
     pyresult = PyFrozenSet_New(NULL);
@@ -27,7 +40,12 @@ ids_to_frozenset(uint64_t *result, int result_size)
         return NULL;
     }
     for(i = 0; i < result_size; i++){
-        pyid = PyLong_FromLongLong((long long)result[i]);
+        id = uint64_to_int64(result[i]);
+        if (id == -1) {
+            Py_DECREF(pyresult);
+            return NULL;
+        }
+        pyid = PyLong_FromLongLong(id);
         if (!pyid) {
             Py_DECREF(pyresult);
             return NULL;
@@ -75,8 +93,11 @@ FDBIterKeys_tp_iternext(DBIter *self)
     if (fdb->changed) {
         return set_error(Error, "FDB changed during iteration");
     }
-    key = (long long)tcfdbiternext(fdb->fdb);
-    if (!key) {
+    key = uint64_to_int64(tcfdbiternext(fdb->fdb));
+    if (key == -1) {
+        return NULL;
+    }
+    else if (!key) {
         if (tcfdbecode(fdb->fdb) == TCENOREC) {
             return set_stopiteration_error();
         }
@@ -133,8 +154,11 @@ FDBIterValues_tp_iternext(DBIter *self)
     if (fdb->changed) {
         return set_error(Error, "FDB changed during iteration");
     }
-    key = (long long)tcfdbiternext(fdb->fdb);
-    if (!key) {
+    key = uint64_to_int64(tcfdbiternext(fdb->fdb));
+    if (key == -1) {
+        return NULL;
+    }
+    else if (!key) {
         if (tcfdbecode(fdb->fdb) == TCENOREC) {
             return set_stopiteration_error();
         }
@@ -193,8 +217,11 @@ FDBIterItems_tp_iternext(DBIter *self)
     if (fdb->changed) {
         return set_error(Error, "FDB changed during iteration");
     }
-    key = (long long)tcfdbiternext(fdb->fdb);
-    if (!key) {
+    key = uint64_to_int64(tcfdbiternext(fdb->fdb));
+    if (key == -1) {
+        return NULL;
+    }
+    else if (!key) {
         if (tcfdbecode(fdb->fdb) == TCENOREC) {
             return set_stopiteration_error();
         }
