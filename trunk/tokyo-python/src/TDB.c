@@ -56,7 +56,7 @@ TDBQuery_process_cb(const void *key, int key_size, TCMAP *value, void *op)
     TCMAP *new_value;
     TCMAP tmp_value;
 
-    pykey = PyBytes_FromStringAndSize((char *)key, (Py_ssize_t)key_size);
+    pykey = void_to_bytes(key, key_size);
     if (!pykey) {
         goto fail;
     }
@@ -415,7 +415,7 @@ TDBIterKeys_tp_iternext(DBIter *self)
         }
         return set_tdb_error(tdb->tdb, NULL);
     }
-    pykey = PyBytes_FromStringAndSize((char *)key, (Py_ssize_t)key_size);
+    pykey = void_to_bytes(key, key_size);
     tcfree(key);
     return pykey;
 }
@@ -534,8 +534,7 @@ TDBIterItems_tp_iternext(DBIter *self)
         }
     }
     else {
-        pykey = PyBytes_FromStringAndSize((char *)tcxstrptr(key),
-                                          (Py_ssize_t)tcxstrsize(key));
+        pykey = tcxstr_to_bytes(key);
         pyvalue = tcmap_to_dict(value);
         if (pykey && pyvalue) {
             pyresult = PyTuple_Pack(2, pykey, pyvalue);
@@ -756,14 +755,14 @@ TDB_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 static
 int TDB_Contains(TDB *self, PyObject *pykey)
 {
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     TCMAP *value;
 
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if(bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
-    value = tctdbget(self->tdb, (void *)key, (int)key_size);
+    value = tctdbget(self->tdb, key, key_size);
     if (!value) {
         if (tctdbecode(self->tdb) == TCENOREC) {
             return 0;
@@ -793,7 +792,7 @@ static PySequenceMethods TDB_tp_as_sequence = {
 static Py_ssize_t
 TDB_Length(TDB *self)
 {
-    return (Py_ssize_t)tctdbrnum(self->tdb);
+    return DB_Length(tctdbrnum(self->tdb));
 }
 
 
@@ -801,15 +800,15 @@ TDB_Length(TDB *self)
 static PyObject *
 TDB_GetItem(TDB *self, PyObject *pykey)
 {
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     TCMAP *value;
     PyObject *pyvalue;
 
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if(bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
-    value = tctdbget(self->tdb, (void *)key, (int)key_size);
+    value = tctdbget(self->tdb, key, key_size);
     if (!value) {
         return set_tdb_error(self->tdb, key);
     }
@@ -823,11 +822,11 @@ TDB_GetItem(TDB *self, PyObject *pykey)
 static int
 TDB_SetItem(TDB *self, PyObject *pykey, PyObject *pyvalue)
 {
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     TCMAP *value;
 
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if(bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
     if (pyvalue) {
@@ -835,7 +834,7 @@ TDB_SetItem(TDB *self, PyObject *pykey, PyObject *pyvalue)
         if (!value) {
             return -1;
         }
-        if (!tctdbput(self->tdb, (void *)key, (int)key_size, value)) {
+        if (!tctdbput(self->tdb, key, key_size, value)) {
             tcmapdel(value);
             set_tdb_error(self->tdb, NULL);
             return -1;
@@ -843,7 +842,7 @@ TDB_SetItem(TDB *self, PyObject *pykey, PyObject *pyvalue)
         tcmapdel(value);
     }
     else {
-        if (!tctdbout(self->tdb, (void *)key, (int)key_size)) {
+        if (!tctdbout(self->tdb, key, key_size)) {
             set_tdb_error(self->tdb, key);
             return -1;
         }
@@ -1079,8 +1078,8 @@ put), this method raises KeyError if key is already in the database.");
 static PyObject *
 TDB_putkeep(TDB *self, PyObject *args, PyObject *kwargs)
 {
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     TCMAP *value;
     PyObject *pykey, *pyvalue = NULL;
 
@@ -1092,14 +1091,14 @@ TDB_putkeep(TDB *self, PyObject *args, PyObject *kwargs)
     if (!pyvalue) {
         return NULL;
     }
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if(bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     value = dict_to_tcmap(pyvalue);
     if (!value) {
         return NULL;
     }
-    if (!tctdbputkeep(self->tdb, (void *)key, (int)key_size, value)) {
+    if (!tctdbputkeep(self->tdb, key, key_size, value)) {
         tcmapdel(value);
         return set_tdb_error(self->tdb, key);
     }
@@ -1119,8 +1118,8 @@ value. If there is no corresponding record, a new record is stored.");
 static PyObject *
 TDB_putcat(TDB *self, PyObject *args, PyObject *kwargs)
 {
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     TCMAP *value;
     PyObject *pykey, *pyvalue = NULL;
 
@@ -1132,14 +1131,14 @@ TDB_putcat(TDB *self, PyObject *args, PyObject *kwargs)
     if (!pyvalue) {
         return NULL;
     }
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if(bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     value = dict_to_tcmap(pyvalue);
     if (!value) {
         return NULL;
     }
-    if (!tctdbputcat(self->tdb, (void *)key, (int)key_size, value)) {
+    if (!tctdbputcat(self->tdb, key, key_size, value)) {
         tcmapdel(value);
         return set_tdb_error(self->tdb, NULL);
     }
@@ -1176,20 +1175,19 @@ is applied.");
 static PyObject *
 TDB_searchkeys(TDB *self, PyObject *args)
 {
-    char *prefix;
-    Py_ssize_t prefix_size;
-    int max = -1;
+    void *prefix;
+    int prefix_size, max = -1;
     TCLIST *result;
     PyObject *pyprefix, *pyresult;
 
     if (!PyArg_ParseTuple(args, "O|i:searchkeys", &pyprefix, &max)) {
         return NULL;
     }
-    if (PyBytes_AsStringAndSize(pyprefix, &prefix, &prefix_size)) {
+    if (bytes_to_void(pyprefix, &prefix, &prefix_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tctdbfwmkeys(self->tdb, (void *)prefix, (int)prefix_size, max);
+    result = tctdbfwmkeys(self->tdb, prefix, prefix_size, max);
     Py_END_ALLOW_THREADS
     pyresult = tclist_to_frozenset(result);
     tclistdel(result);
@@ -1440,6 +1438,13 @@ TDB_metasearch(TDB *notused, PyObject *args)
         return NULL;
     }
     len = PySequence_Fast_GET_SIZE(pyseq);
+#ifdef TK_PY_SIZE_T_BIGGER_THAN_INT
+    if (len > TK_PY_MAX_LEN) {
+        set_error(PyExc_OverflowError, "sequence is too large");
+        Py_DECREF(pyseq);
+        return NULL;
+    }
+#endif
     queries = (TDBQRY **)tcmalloc((size_t)len * sizeof(TDBQRY *));
     if (!queries) {
         Py_DECREF(pyseq);
