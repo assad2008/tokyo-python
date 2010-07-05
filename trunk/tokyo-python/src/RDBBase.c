@@ -21,12 +21,20 @@ char *
 dict_to_str(PyObject *kwargs)
 {
     PyObject *pykey, *pyvalue;
-    Py_ssize_t pos = 0;
+    Py_ssize_t len, pos = 0;
     const char *key, *value;
     TCLIST *item, *items;
     char *result;
 
-    items = tclistnew2((int)PyDict_Size(kwargs));
+    /* not really needed, but hey... */
+    len = PyDict_Size(kwargs);
+#ifdef TK_PY_SIZE_T_BIGGER_THAN_INT
+    if (len > TK_PY_MAX_LEN) {
+        set_error(PyExc_OverflowError, "dict is too large");
+        return NULL;
+    }
+#endif
+    items = tclistnew2((int)len);
     if (!items) {
         set_error(Error, "could not create TCLIST, memory issue?");
         return NULL;
@@ -229,7 +237,7 @@ RDBBase_Length(RDBBase *self)
     Py_BEGIN_ALLOW_THREADS
     len = tcrdbrnum(self->rdb);
     Py_END_ALLOW_THREADS
-    return (Py_ssize_t)len;
+    return DB_Length(len);
 }
 
 
@@ -271,7 +279,7 @@ RDBBase_tp_iternext(RDBBase *self)
         }
         return set_rdb_error(self->rdb, NULL);
     }
-    pykey = PyBytes_FromStringAndSize((char *)key, (Py_ssize_t)key_size);
+    pykey = void_to_bytes(key, key_size);
     tcfree(key);
     return pykey;
 }
@@ -397,20 +405,19 @@ is applied.");
 static PyObject *
 RDBBase_searchkeys(RDBBase *self, PyObject *args)
 {
-    char *prefix;
-    Py_ssize_t prefix_size;
-    int max = -1;
+    void *prefix;
+    int prefix_size, max = -1;
     TCLIST *result;
     PyObject *pyprefix, *pyresult;
 
     if (!PyArg_ParseTuple(args, "O|i:searchkeys", &pyprefix, &max)) {
         return NULL;
     }
-    if (PyBytes_AsStringAndSize(pyprefix, &prefix, &prefix_size)) {
+    if (bytes_to_void(pyprefix, &prefix, &prefix_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcrdbfwmkeys(self->rdb, (void *)prefix, (int)prefix_size, max);
+    result = tcrdbfwmkeys(self->rdb, prefix, prefix_size, max);
     Py_END_ALLOW_THREADS
     pyresult = tclist_to_frozenset(result);
     tclistdel(result);

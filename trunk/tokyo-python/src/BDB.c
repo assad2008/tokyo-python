@@ -637,9 +637,9 @@ BDB_cmp_cb(const char *a, int a_size, const char *b, int b_size, void *op)
         goto fail;
     }
 #if PY_MAJOR_VERSION >= 3
-    if(PyLong_Check(pyresult)) {
+    if (PyLong_Check(pyresult)) {
 #else
-    if(PyInt_Check(pyresult)) {
+    if (PyInt_Check(pyresult)) {
 #endif
         result = (int)PyLong_AsLong(pyresult);
         if (result == -1 && PyErr_Occurred()) {
@@ -989,7 +989,7 @@ BDB_get(BDB *self, PyObject *args, PyObject *kwargs)
     if (duplicate == Py_False) {
         return BDB_GetItem(self, pykey);
     }
-    if(bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
@@ -1033,7 +1033,7 @@ BDB_remove(BDB *self, PyObject *args, PyObject *kwargs)
         }
         Py_RETURN_NONE;
     }
-    if(bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
@@ -1163,7 +1163,7 @@ BDB_putdup(BDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "OO:putdup", &pykey, &pyvalues)) {
         return NULL;
     }
-    if(bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     values = seq_to_tclist(pyvalues);
@@ -1468,9 +1468,9 @@ BDB_setcmpfunc(BDB *self, PyObject *args)
         return NULL;
     }
 #if PY_MAJOR_VERSION >= 3
-    if(PyLong_Check(pycb)) {
+    if (PyLong_Check(pycb)) {
 #else
-    if(PyInt_Check(pycb)) {
+    if (PyInt_Check(pycb)) {
 #endif
         cmp = (int)PyLong_AsLong(pycb);
         if (cmp == -1 && PyErr_Occurred()) {

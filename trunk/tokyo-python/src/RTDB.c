@@ -271,16 +271,16 @@ http://1978th.net/tokyotyrant/spex.html#tcrdbapi_apitbl");
 static
 int RTDB_Contains(RTDB *self, PyObject *pykey)
 {
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     TCMAP *value;
     RDBBase *rdbbase = (RDBBase *)self;
 
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
     Py_BEGIN_ALLOW_THREADS
-    value = tcrdbtblget(rdbbase->rdb, (void *)key, (int)key_size);
+    value = tcrdbtblget(rdbbase->rdb, key, key_size);
     Py_END_ALLOW_THREADS
     if (!value) {
         if (tcrdbecode(rdbbase->rdb) == TTENOREC) {
@@ -311,17 +311,17 @@ static PySequenceMethods RTDB_tp_as_sequence = {
 static PyObject *
 RTDB_GetItem(RTDB *self, PyObject *pykey)
 {
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     TCMAP *value;
     PyObject *pyvalue;
     RDBBase *rdbbase = (RDBBase *)self;
 
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    value = tcrdbtblget(rdbbase->rdb, (void *)key, (int)key_size);
+    value = tcrdbtblget(rdbbase->rdb, key, key_size);
     Py_END_ALLOW_THREADS
     if (!value) {
         return set_rdb_error(rdbbase->rdb, key);
@@ -336,13 +336,13 @@ RTDB_GetItem(RTDB *self, PyObject *pykey)
 static int
 RTDB_SetItem(RTDB *self, PyObject *pykey, PyObject *pyvalue)
 {
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     TCMAP *value;
     bool result;
     RDBBase *rdbbase = (RDBBase *)self;
 
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
     if (pyvalue) {
@@ -351,7 +351,7 @@ RTDB_SetItem(RTDB *self, PyObject *pykey, PyObject *pyvalue)
             return -1;
         }
         Py_BEGIN_ALLOW_THREADS
-        result = tcrdbtblput(rdbbase->rdb, (void *)key, (int)key_size, value);
+        result = tcrdbtblput(rdbbase->rdb, key, key_size, value);
         Py_END_ALLOW_THREADS
         if (!result) {
             tcmapdel(value);
@@ -362,7 +362,7 @@ RTDB_SetItem(RTDB *self, PyObject *pykey, PyObject *pyvalue)
     }
     else {
         Py_BEGIN_ALLOW_THREADS
-        result = tcrdbtblout(rdbbase->rdb, (void *)key, (int)key_size);
+        result = tcrdbtblout(rdbbase->rdb, key, key_size);
         Py_END_ALLOW_THREADS
         if (!result) {
             set_rdb_error(rdbbase->rdb, key);
@@ -481,8 +481,8 @@ put), this method raises KeyError if key is already in the database.");
 static PyObject *
 RTDB_putkeep(RTDB *self, PyObject *args, PyObject *kwargs)
 {
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     TCMAP *value;
     PyObject *pykey, *pyvalue = NULL;
     bool result;
@@ -496,7 +496,7 @@ RTDB_putkeep(RTDB *self, PyObject *args, PyObject *kwargs)
     if (!pyvalue) {
         return NULL;
     }
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     value = dict_to_tcmap(pyvalue);
@@ -504,7 +504,7 @@ RTDB_putkeep(RTDB *self, PyObject *args, PyObject *kwargs)
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcrdbtblputkeep(rdbbase->rdb, (void *)key, (int)key_size, value);
+    result = tcrdbtblputkeep(rdbbase->rdb, key, key_size, value);
     tcmapdel(value);
     Py_END_ALLOW_THREADS
     if (!result) {
@@ -525,8 +525,8 @@ value. If there is no corresponding record, a new record is stored.");
 static PyObject *
 RTDB_putcat(RTDB *self, PyObject *args, PyObject *kwargs)
 {
-    char *key;
-    Py_ssize_t key_size;
+    void *key;
+    int key_size;
     TCMAP *value;
     PyObject *pykey, *pyvalue = NULL;
     bool result;
@@ -540,7 +540,7 @@ RTDB_putcat(RTDB *self, PyObject *args, PyObject *kwargs)
     if (!pyvalue) {
         return NULL;
     }
-    if(PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     value = dict_to_tcmap(pyvalue);
@@ -548,7 +548,7 @@ RTDB_putcat(RTDB *self, PyObject *args, PyObject *kwargs)
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcrdbtblputcat(rdbbase->rdb, (void *)key, (int)key_size, value);
+    result = tcrdbtblputcat(rdbbase->rdb, key, key_size, value);
     tcmapdel(value);
     Py_END_ALLOW_THREADS
     if (!result) {
@@ -650,6 +650,13 @@ RTDB_metasearch(RTDB *notused, PyObject *args)
         return NULL;
     }
     len = PySequence_Fast_GET_SIZE(pyseq);
+#ifdef TK_PY_SIZE_T_BIGGER_THAN_INT
+    if (len > TK_PY_MAX_LEN) {
+        set_error(PyExc_OverflowError, "sequence is too large");
+        Py_DECREF(pyseq);
+        return NULL;
+    }
+#endif
     queries = (RDBQRY **)tcmalloc((size_t)len * sizeof(RDBQRY *));
     if (!queries) {
         Py_DECREF(pyseq);
