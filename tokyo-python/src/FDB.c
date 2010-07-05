@@ -126,8 +126,8 @@ FDBIterValues_tp_iternext(DBIter *self)
 {
     FDB *fdb = (FDB *)self->db;
     long long key;
-    int value_size;
     void *value;
+    int value_size;
     PyObject *pyvalue;
 
     if (fdb->changed) {
@@ -141,7 +141,7 @@ FDBIterValues_tp_iternext(DBIter *self)
         return set_fdb_error(fdb->fdb, 0);
     }
     value = tcfdbget(fdb->fdb, key, &value_size);
-    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    pyvalue = void_to_bytes(value, value_size);
     tcfree(value);
     return pyvalue;
 }
@@ -186,8 +186,8 @@ FDBIterItems_tp_iternext(DBIter *self)
 {
     FDB *fdb = (FDB *)self->db;
     long long key;
-    int value_size;
     void *value;
+    int value_size;
     PyObject *pykey, *pyvalue, *pyresult = NULL;
 
     if (fdb->changed) {
@@ -202,7 +202,7 @@ FDBIterItems_tp_iternext(DBIter *self)
     }
     value = tcfdbget(fdb->fdb, key, &value_size);
     pykey = PyLong_FromLongLong(key);
-    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    pyvalue = void_to_bytes(value, value_size);
     if (pykey && pyvalue) {
         pyresult = PyTuple_Pack(2, pykey, pyvalue);
     }
@@ -338,7 +338,7 @@ static PySequenceMethods FDB_tp_as_sequence = {
 static Py_ssize_t
 FDB_Length(FDB *self)
 {
-    return (Py_ssize_t)tcfdbrnum(self->fdb);
+    return DB_Length(tcfdbrnum(self->fdb));
 }
 
 
@@ -347,8 +347,8 @@ static PyObject *
 FDB_GetItem(FDB *self, PyObject *pykey)
 {
     long long key;
-    int value_size;
     void *value;
+    int value_size;
     PyObject *pyvalue;
 
     key = PyLong_AsLongLong(pykey);
@@ -359,7 +359,7 @@ FDB_GetItem(FDB *self, PyObject *pykey)
     if (!value) {
         return set_fdb_error(self->fdb, key);
     }
-    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    pyvalue = void_to_bytes(value, value_size);
     tcfree(value);
     return pyvalue;
 }
@@ -370,18 +370,18 @@ static int
 FDB_SetItem(FDB *self, PyObject *pykey, PyObject *pyvalue)
 {
     long long key;
-    char *value;
-    Py_ssize_t value_size;
+    void *value;
+    int value_size;
 
     key = PyLong_AsLongLong(pykey);
     if (key == -1 && PyErr_Occurred()) {
         return -1;
     }
     if (pyvalue) {
-        if(PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
+        if(bytes_to_void(pyvalue, &value, &value_size)) {
             return -1;
         }
-        if (!tcfdbput(self->fdb, key, (void *)value, (int)value_size)) {
+        if (!tcfdbput(self->fdb, key, value, value_size)) {
             set_fdb_error(self->fdb, 0);
             return -1;
         }
@@ -619,17 +619,17 @@ static PyObject *
 FDB_putkeep(FDB *self, PyObject *args)
 {
     long long key;
-    char *value;
-    Py_ssize_t value_size;
+    void *value;
+    int value_size;
     PyObject *pyvalue;
 
     if (!PyArg_ParseTuple(args, "LO:putkeep", &key, &pyvalue)) {
         return NULL;
     }
-    if(PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
+    if(bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tcfdbputkeep(self->fdb, key, (void *)value, (int)value_size)) {
+    if (!tcfdbputkeep(self->fdb, key, value, value_size)) {
         return set_fdb_error(self->fdb, key);
     }
     self->changed = true;
@@ -648,17 +648,17 @@ static PyObject *
 FDB_putcat(FDB *self, PyObject *args)
 {
     long long key;
-    char *value;
-    Py_ssize_t value_size;
+    void *value;
+    int value_size;
     PyObject *pyvalue;
 
     if (!PyArg_ParseTuple(args, "LO:putcat", &key, &pyvalue)) {
         return NULL;
     }
-    if(PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
+    if(bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tcfdbputcat(self->fdb, key, (void *)value, (int)value_size)) {
+    if (!tcfdbputcat(self->fdb, key, value, value_size)) {
         return set_fdb_error(self->fdb, 0);
     }
     self->changed = true;
