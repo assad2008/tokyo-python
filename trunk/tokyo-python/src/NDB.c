@@ -32,7 +32,7 @@ NDBIterKeys_tp_iternext(DBIter *self)
     if (!key) {
         return set_stopiteration_error();
     }
-    pykey = PyBytes_FromStringAndSize((char *)key, (Py_ssize_t)key_size);
+    pykey = void_to_bytes(key, key_size);
     tcfree(key);
     return pykey;
 }
@@ -88,7 +88,7 @@ NDBIterValues_tp_iternext(DBIter *self)
         return set_stopiteration_error();
     }
     value = tcndbget(ndb->ndb, key, key_size, &value_size);
-    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    pyvalue = void_to_bytes(value, value_size);
     tcfree(key);
     tcfree(value);
     return pyvalue;
@@ -145,8 +145,8 @@ NDBIterItems_tp_iternext(DBIter *self)
         return set_stopiteration_error();
     }
     value = tcndbget(ndb->ndb, key, key_size, &value_size);
-    pykey = PyBytes_FromStringAndSize((char *)key, (Py_ssize_t)key_size);
-    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    pykey = void_to_bytes(key, key_size);
+    pyvalue = void_to_bytes(value, value_size);
     if (pykey && pyvalue) {
         pyresult = PyTuple_Pack(2, pykey, pyvalue);
     }
@@ -240,15 +240,13 @@ NDB_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 static
 int NDB_Contains(NDB *self, PyObject *pykey)
 {
-    char *key;
-    Py_ssize_t key_size;
-    void *value;
-    int value_size;
+    void *key, *value;
+    int key_size, value_size;
 
-    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
-    value = tcndbget(self->ndb, (void *)key, (int)key_size, &value_size);
+    value = tcndbget(self->ndb, key, key_size, &value_size);
     if (!value) {
         return 0;
     }
@@ -274,7 +272,7 @@ static PySequenceMethods NDB_tp_as_sequence = {
 static Py_ssize_t
 NDB_Length(NDB *self)
 {
-    return (Py_ssize_t)tcndbrnum(self->ndb);
+    return DB_Length(tcndbrnum(self->ndb));
 }
 
 
@@ -282,20 +280,18 @@ NDB_Length(NDB *self)
 static PyObject *
 NDB_GetItem(NDB *self, PyObject *pykey)
 {
-    char *key;
-    Py_ssize_t key_size;
-    void *value;
-    int value_size;
+    void *key, *value;
+    int key_size, value_size;
     PyObject *pyvalue;
 
-    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
-    value = tcndbget(self->ndb, (void *)key, (int)key_size, &value_size);
+    value = tcndbget(self->ndb, key, key_size, &value_size);
     if (!value) {
         return set_key_error(key);
     }
-    pyvalue = PyBytes_FromStringAndSize((char *)value, (Py_ssize_t)value_size);
+    pyvalue = void_to_bytes(value, value_size);
     tcfree(value);
     return pyvalue;
 }
@@ -305,21 +301,20 @@ NDB_GetItem(NDB *self, PyObject *pykey)
 static int
 NDB_SetItem(NDB *self, PyObject *pykey, PyObject *pyvalue)
 {
-    char *key, *value;
-    Py_ssize_t key_size, value_size;
+    void *key, *value;
+    int key_size, value_size;
 
-    if (PyBytes_AsStringAndSize(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
     if (pyvalue) {
-        if (PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
+        if (bytes_to_void(pyvalue, &value, &value_size)) {
             return -1;
         }
-        tcndbput(self->ndb, (void *)key, (int)key_size,
-                 (void *)value, (int)value_size);
+        tcndbput(self->ndb, key, key_size, value, value_size);
     }
     else {
-        if (!tcndbout(self->ndb, (void *)key, (int)key_size)) {
+        if (!tcndbout(self->ndb, key, key_size)) {
             set_key_error(key);
             return -1;
         }
@@ -430,19 +425,18 @@ put), this method raises KeyError if key is already in the database.");
 static PyObject *
 NDB_putkeep(NDB *self, PyObject *args)
 {
-    char *key, *value;
-    Py_ssize_t key_size, value_size;
+    void *key, *value;
+    int key_size, value_size;
     PyObject *pykey, *pyvalue;
 
     if (!PyArg_ParseTuple(args, "OO:putkeep", &pykey, &pyvalue)) {
         return NULL;
     }
-    if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
-        PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
+    if (bytes_to_void(pykey, &key, &key_size) ||
+        bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    if (!tcndbputkeep(self->ndb, (void *)key, (int)key_size,
-                      (void *)value, (int)value_size)) {
+    if (!tcndbputkeep(self->ndb, key, key_size, value, value_size)) {
         return set_key_error(key);
     }
     self->changed = true;
@@ -460,19 +454,18 @@ If there is no corresponding record, a new record is stored.");
 static PyObject *
 NDB_putcat(NDB *self, PyObject *args)
 {
-    char *key, *value;
-    Py_ssize_t key_size, value_size;
+    void *key, *value;
+    int key_size, value_size;
     PyObject *pykey, *pyvalue;
 
     if (!PyArg_ParseTuple(args, "OO:putcat", &pykey, &pyvalue)) {
         return NULL;
     }
-    if (PyBytes_AsStringAndSize(pykey, &key, &key_size) ||
-        PyBytes_AsStringAndSize(pyvalue, &value, &value_size)) {
+    if (bytes_to_void(pykey, &key, &key_size) ||
+        bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
-    tcndbputcat(self->ndb, (void *)key, (int)key_size,
-                (void *)value, (int)value_size);
+    tcndbputcat(self->ndb, key, key_size, value, value_size);
     self->changed = true;
     Py_RETURN_NONE;
 }
@@ -489,20 +482,19 @@ is applied.");
 static PyObject *
 NDB_searchkeys(NDB *self, PyObject *args)
 {
-    char *prefix;
-    Py_ssize_t prefix_size;
-    int max = -1;
+    void *prefix;
+    int prefix_size, max = -1;
     TCLIST *result;
     PyObject *pyprefix, *pyresult;
 
     if (!PyArg_ParseTuple(args, "O|i:searchkeys", &pyprefix, &max)) {
         return NULL;
     }
-    if (PyBytes_AsStringAndSize(pyprefix, &prefix, &prefix_size)) {
+    if (bytes_to_void(pyprefix, &prefix, &prefix_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    result = tcndbfwmkeys(self->ndb, (void *)prefix, (int)prefix_size, max);
+    result = tcndbfwmkeys(self->ndb, prefix, prefix_size, max);
     Py_END_ALLOW_THREADS
     pyresult = tclist_to_frozenset(result);
     tclistdel(result);
