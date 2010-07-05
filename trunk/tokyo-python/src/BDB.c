@@ -45,13 +45,10 @@ seq_to_tclist(PyObject *pyvalues)
         return NULL;
     }
     len = PySequence_Fast_GET_SIZE(pyseq);
-#ifdef TK_PY_SIZE_T_BIGGER_THAN_INT
-    if (len > TK_PY_MAX_LEN) {
-        set_error(PyExc_OverflowError, "sequence is too large");
+    if (check_py_ssize_t_len(len, pyseq)) {
         Py_DECREF(pyseq);
         return NULL;
     }
-#endif
     values = tclistnew2((int)len);
     if (!values) {
         set_error(Error, "could not create TCLIST, memory issue?");

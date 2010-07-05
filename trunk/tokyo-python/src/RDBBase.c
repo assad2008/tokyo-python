@@ -26,14 +26,11 @@ dict_to_str(PyObject *kwargs)
     TCLIST *item, *items;
     char *result;
 
-    /* not really needed, but hey... */
     len = PyDict_Size(kwargs);
-#ifdef TK_PY_SIZE_T_BIGGER_THAN_INT
-    if (len > TK_PY_MAX_LEN) {
-        set_error(PyExc_OverflowError, "dict is too large");
+    /* not really needed, but hey... */
+    if (check_py_ssize_t_len(len, kwargs)) {
         return NULL;
     }
-#endif
     items = tclistnew2((int)len);
     if (!items) {
         set_error(Error, "could not create TCLIST, memory issue?");

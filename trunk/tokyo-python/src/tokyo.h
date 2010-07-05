@@ -101,6 +101,20 @@ PyUnicode_AsString(PyObject *unicode)
 #endif
 
 
+int
+check_py_ssize_t_len(Py_ssize_t len, PyObject *obj)
+{
+#ifdef TK_PY_SIZE_T_BIGGER_THAN_INT
+    if (len > TK_PY_MAX_LEN) {
+        PyErr_Format(PyExc_OverflowError, "%s is too large",
+                     Py_TYPE(obj)->tp_name);
+        return -1;
+    }
+#endif
+    return 0;
+}
+
+
 /* convert a bytes object to a void ptr */
 int
 bytes_to_void(PyObject *pyvalue, void **value, int *value_len)
@@ -111,12 +125,9 @@ bytes_to_void(PyObject *pyvalue, void **value, int *value_len)
     if (PyBytes_AsStringAndSize(pyvalue, &tmp, &tmp_len)) {
         return -1;
     }
-#ifdef TK_PY_SIZE_T_BIGGER_THAN_INT
-    if (tmp_len > TK_PY_MAX_LEN) {
-        set_error(PyExc_OverflowError, "string is too large");
+    if (check_py_ssize_t_len(tmp_len, pyvalue)) {
         return -1;
     }
-#endif
     *value = (void *)tmp;
     *value_len = (int)tmp_len;
     return 0;
