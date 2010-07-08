@@ -106,6 +106,92 @@ rdb_get_status(TCRDB *rdb)
 
 
 /*******************************************************************************
+* RDBBase iterator types
+*******************************************************************************/
+
+/* new_RDBBaseIter */
+static PyObject *
+new_RDBBaseIter(RDBBase *self, PyTypeObject *type)
+{
+    PyObject *iter;
+    bool result;
+
+    iter = DBIter_tp_new(type, (PyObject *)self);
+    if (!iter) {
+        return NULL;
+    }
+    Py_BEGIN_ALLOW_THREADS
+    result = tcrdbiterinit(self->rdb);
+    Py_END_ALLOW_THREADS
+    if (!result) {
+        return set_rdb_error(self->rdb, NULL);
+    }
+    self->changed = false;
+    return iter;
+}
+
+
+/* RDBBaseIterKeysType.tp_iternext */
+static PyObject *
+RDBBaseIterKeys_tp_iternext(DBIter *self)
+{
+    RDBBase *rdbbase = (RDBBase *)self->db;
+    void *key;
+    int key_size;
+    PyObject *pykey;
+
+    if (rdbbase->changed) {
+        return set_error(Error, "DB changed during iteration");
+    }
+    Py_BEGIN_ALLOW_THREADS
+    key = tcrdbiternext(rdbbase->rdb, &key_size);
+    Py_END_ALLOW_THREADS
+    if (!key) {
+        if (tcrdbecode(rdbbase->rdb) == TTENOREC) {
+            return set_stopiteration_error();
+        }
+        return set_rdb_error(rdbbase->rdb, NULL);
+    }
+    pykey = void_to_bytes(key, key_size);
+    tcfree(key);
+    return pykey;
+}
+
+
+/* RDBBaseIterKeysType */
+static PyTypeObject RDBBaseIterKeysType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.RDBBaseIterKeys",          /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)RDBBaseIterKeys_tp_iternext, /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/*******************************************************************************
 * RDBBaseType
 *******************************************************************************/
 
@@ -170,6 +256,19 @@ RDBBase_open(RDBBase *self, PyObject *args, PyObject *kwargs)
 }
 
 
+/* RDB/RTDB_tp_as_mapping.mp_length */
+static Py_ssize_t
+RDBBase_Length(RDBBase *self)
+{
+    unsigned long long len;
+
+    Py_BEGIN_ALLOW_THREADS
+    len = tcrdbrnum(self->rdb);
+    Py_END_ALLOW_THREADS
+    return DB_Length(len);
+}
+
+
 /* RDBBaseType.tp_traverse */
 static int
 RDBBase_tp_traverse(RDBBase *self, visitproc visit, void *arg)
@@ -224,72 +323,11 @@ RDBBase_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
     return (PyObject *)self;
 }
 
-
-/* RDB/RTDB_tp_as_mapping.mp_length */
-static Py_ssize_t
-RDBBase_Length(RDBBase *self)
-{
-    unsigned long long len;
-
-    Py_BEGIN_ALLOW_THREADS
-    len = tcrdbrnum(self->rdb);
-    Py_END_ALLOW_THREADS
-    return DB_Length(len);
-}
-
-
 /* RDBBaseType.tp_iter */
 static PyObject *
 RDBBase_tp_iter(RDBBase *self)
 {
-    bool result;
-
-    Py_BEGIN_ALLOW_THREADS
-    result = tcrdbiterinit(self->rdb);
-    Py_END_ALLOW_THREADS
-    if (!result) {
-        return set_rdb_error(self->rdb, NULL);
-    }
-    self->changed = false;
-    Py_INCREF(self);
-    return (PyObject *)self;
-}
-
-
-/* RDBBaseType.tp_iternext */
-static PyObject *
-RDBBase_tp_iternext(RDBBase *self)
-{
-    void *key;
-    int key_size;
-    PyObject *pykey;
-
-    if (self->changed) {
-        return set_error(Error, "DB changed during iteration");
-    }
-    Py_BEGIN_ALLOW_THREADS
-    key = tcrdbiternext(self->rdb, &key_size);
-    Py_END_ALLOW_THREADS
-    if (!key) {
-        if (tcrdbecode(self->rdb) == TTENOREC) {
-            return set_stopiteration_error();
-        }
-        return set_rdb_error(self->rdb, NULL);
-    }
-    pykey = void_to_bytes(key, key_size);
-    tcfree(key);
-    return pykey;
-}
-
-
-/* RDBBase.__length_hint__ */
-PyDoc_STRVAR(RDBBase_length_hint_doc,
-"Private method returning an estimate of len(list(rdb)).");
-
-static PyObject *
-RDBBase_length_hint(RDBBase *self)
-{
-    return PyLong_FromSsize_t(RDBBase_Length(self));
+    return new_RDBBaseIter(self, &RDBBaseIterKeysType);
 }
 
 
@@ -542,10 +580,21 @@ RDBBase_setmaster(RDBBase *self, PyObject *args)
 }
 
 
+/* RDBBase.iterkeys() */
+PyDoc_STRVAR(RDBBase_iterkeys_doc,
+"iterkeys()\n\
+\n\
+Return an iterator over the database's keys.");
+
+static PyObject *
+RDBBase_iterkeys(RDBBase *self)
+{
+    return new_RDBBaseIter(self, &RDBBaseIterKeysType);
+}
+
+
 /* RDBBaseType.tp_methods */
 static PyMethodDef RDBBase_tp_methods[] = {
-    {"__length_hint__", (PyCFunction)RDBBase_length_hint, METH_NOARGS,
-     RDBBase_length_hint_doc},
     {"close", (PyCFunction)RDBBase_close, METH_NOARGS, RDBBase_close_doc},
     {"clear", (PyCFunction)RDBBase_clear, METH_NOARGS, RDBBase_clear_doc},
     {"copy", (PyCFunction)RDBBase_copy, METH_VARARGS, RDBBase_copy_doc},
@@ -558,6 +607,8 @@ static PyMethodDef RDBBase_tp_methods[] = {
     {"restore", (PyCFunction)RDBBase_restore, METH_VARARGS, RDBBase_restore_doc},
     {"setmaster", (PyCFunction)RDBBase_setmaster, METH_VARARGS,
      RDBBase_setmaster_doc},
+    {"iterkeys", (PyCFunction)RDBBase_iterkeys, METH_NOARGS,
+     RDBBase_iterkeys_doc},
     {NULL}  /* Sentinel */
 };
 
@@ -635,7 +686,7 @@ static PyTypeObject RDBBaseType = {
     0,                                        /*tp_richcompare*/
     0,                                        /*tp_weaklistoffset*/
     (getiterfunc)RDBBase_tp_iter,             /*tp_iter*/
-    (iternextfunc)RDBBase_tp_iternext,        /*tp_iternext*/
+    0,                                        /*tp_iternext*/
     RDBBase_tp_methods,                       /*tp_methods*/
     0,                                        /*tp_members*/
     RDBBase_tp_getsets,                       /*tp_getsets*/

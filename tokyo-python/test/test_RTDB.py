@@ -248,7 +248,7 @@ class RTDBTestNullBytes(RTDBTest):
         self.db[b"ab"] = {b"test": b"ab"}
         self.db[b"cd"] = {b"test": b"c\0d"}
         self.assertEqual([{b"test": b"ab"}, {b"test": b"c\0d"}],
-                         sorted(list(self.db.itervalues())))
+                         list(self.db.itervalues()))
 
     def test_iteritems(self):
         self.db[b"ab"] = {b"test": b"ab"}

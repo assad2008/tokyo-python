@@ -296,6 +296,13 @@ class RDBTestNullBytes(RDBTest):
         self.db.putcat(b"ab", b"c\0d")
         self.assertEqual(self.db[b"ab"], b"abc\0d")
 
+    def test_putnb(self):
+        self.assertRaises(TypeError, self.db.putnb, b"b\0c", b"bc")
+        self.db.putnb(b"ab", b"ab")
+        self.db.putnb(b"cd", b"c\0d")
+        self.db.sync()
+        self.assertEqual(b"c\0d", self.db[b"cd"])
+
     def test_searchkeys(self):
         self.assertRaises(TypeError, self.db.searchkeys, b"b\0c")
 

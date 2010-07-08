@@ -253,6 +253,281 @@ static PyTypeObject RTDBQueryType = {
 
 
 /*******************************************************************************
+* RTDB iterator types
+*******************************************************************************/
+
+/* RTDBIterValuesType.tp_iternext */
+static PyObject *
+RTDBIterValues_tp_iternext(DBIter *self)
+{
+    RDBBase *rdbbase = (RDBBase *)self->db;
+    void *key;
+    int key_size;
+    TCMAP *value;
+    PyObject *pyvalue;
+
+    if (rdbbase->changed) {
+        return set_error(Error, "DB changed during iteration");
+    }
+    Py_BEGIN_ALLOW_THREADS
+    key = tcrdbiternext(rdbbase->rdb, &key_size);
+    if (key) {
+        value = tcrdbtblget(rdbbase->rdb, key, key_size);
+    }
+    Py_END_ALLOW_THREADS
+    if (!key) {
+        if (tcrdbecode(rdbbase->rdb) == TTENOREC) {
+            return set_stopiteration_error();
+        }
+        return set_rdb_error(rdbbase->rdb, NULL);
+    }
+    pyvalue = tcmap_to_dict(value);
+    tcfree(key);
+    tcmapdel(value);
+    return pyvalue;
+}
+
+
+/* RTDBIterValuesType */
+static PyTypeObject RTDBIterValuesType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.RTDBIterValues",            /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)RTDBIterValues_tp_iternext,  /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* RTDBIterItemsType.tp_iternext */
+static PyObject *
+RTDBIterItems_tp_iternext(DBIter *self)
+{
+    RDBBase *rdbbase = (RDBBase *)self->db;
+    void *key;
+    int key_size;
+    TCMAP *value;
+    PyObject *pykey, *pyvalue, *pyresult = NULL;
+
+    if (rdbbase->changed) {
+        return set_error(Error, "DB changed during iteration");
+    }
+    Py_BEGIN_ALLOW_THREADS
+    key = tcrdbiternext(rdbbase->rdb, &key_size);
+    if (key) {
+        value = tcrdbtblget(rdbbase->rdb, key, key_size);
+    }
+    Py_END_ALLOW_THREADS
+    if (!key) {
+        if (tcrdbecode(rdbbase->rdb) == TTENOREC) {
+            return set_stopiteration_error();
+        }
+        return set_rdb_error(rdbbase->rdb, NULL);
+    }
+    pykey = void_to_bytes(key, key_size);
+    pyvalue = tcmap_to_dict(value);
+    if (pykey && pyvalue) {
+        pyresult = PyTuple_Pack(2, pykey, pyvalue);
+    }
+    Py_XDECREF(pykey);
+    Py_XDECREF(pyvalue);
+    tcfree(key);
+    tcmapdel(value);
+    return pyresult;
+}
+
+
+/* RTDBIterItemsType */
+static PyTypeObject RTDBIterItemsType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.RTDBIterItems",             /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)RTDBIterItems_tp_iternext,   /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* RTDBIterValuesKeysType.tp_iternext */
+static PyObject *
+RTDBIterValuesKeys_tp_iternext(DBIter *self)
+{
+    RDBBase *rdbbase = (RDBBase *)self->db;
+    void *key;
+    int key_size;
+    TCMAP *value;
+    TCLIST *valuekeys;
+    PyObject *pyvaluekeys;
+
+    if (rdbbase->changed) {
+        return set_error(Error, "DB changed during iteration");
+    }
+    Py_BEGIN_ALLOW_THREADS
+    key = tcrdbiternext(rdbbase->rdb, &key_size);
+    if (key) {
+        value = tcrdbtblget(rdbbase->rdb, key, key_size);
+    }
+    Py_END_ALLOW_THREADS
+    if (!key) {
+        if (tcrdbecode(rdbbase->rdb) == TTENOREC) {
+            return set_stopiteration_error();
+        }
+        return set_rdb_error(rdbbase->rdb, NULL);
+    }
+    valuekeys = tcmapkeys(value);
+    pyvaluekeys = tclist_to_tuple(valuekeys);
+    tcfree(key);
+    tcmapdel(value);
+    tclistdel(valuekeys);
+    return pyvaluekeys;
+}
+
+
+/* RTDBIterValuesKeysType */
+static PyTypeObject RTDBIterValuesKeysType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.RTDBIterValuesKeys",       /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)RTDBIterValuesKeys_tp_iternext, /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/* RTDBIterValuesValsType.tp_iternext */
+static PyObject *
+RTDBIterValuesVals_tp_iternext(DBIter *self)
+{
+    RDBBase *rdbbase = (RDBBase *)self->db;
+    void *key;
+    int key_size;
+    TCMAP *value;
+    TCLIST *valuevals;
+    PyObject *pyvaluevals;
+
+    if (rdbbase->changed) {
+        return set_error(Error, "DB changed during iteration");
+    }
+    Py_BEGIN_ALLOW_THREADS
+    key = tcrdbiternext(rdbbase->rdb, &key_size);
+    if (key) {
+        value = tcrdbtblget(rdbbase->rdb, key, key_size);
+    }
+    Py_END_ALLOW_THREADS
+    if (!key) {
+        if (tcrdbecode(rdbbase->rdb) == TTENOREC) {
+            return set_stopiteration_error();
+        }
+        return set_rdb_error(rdbbase->rdb, NULL);
+    }
+    valuevals = tcmapvals(value);
+    pyvaluevals = tclist_to_tuple(valuevals);
+    tcmapdel(value);
+    tclistdel(valuevals);
+    return pyvaluevals;
+}
+
+
+/* RTDBIterValuesValsType */
+static PyTypeObject RTDBIterValuesValsType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "tokyo.cabinet.RTDBIterValuesVals",       /*tp_name*/
+    sizeof(DBIter),                           /*tp_basicsize*/
+    0,                                        /*tp_itemsize*/
+    (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
+    0,                                        /*tp_print*/
+    0,                                        /*tp_getattr*/
+    0,                                        /*tp_setattr*/
+    0,                                        /*tp_compare*/
+    0,                                        /*tp_repr*/
+    0,                                        /*tp_as_number*/
+    0,                                        /*tp_as_sequence*/
+    0,                                        /*tp_as_mapping*/
+    0,                                        /*tp_hash */
+    0,                                        /*tp_call*/
+    0,                                        /*tp_str*/
+    0,                                        /*tp_getattro*/
+    0,                                        /*tp_setattro*/
+    0,                                        /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,  /*tp_flags*/
+    0,                                        /*tp_doc*/
+    (traverseproc)DBIter_tp_traverse,         /*tp_traverse*/
+    (inquiry)DBIter_tp_clear,                 /*tp_clear*/
+    0,                                        /*tp_richcompare*/
+    0,                                        /*tp_weaklistoffset*/
+    PyObject_SelfIter,                        /*tp_iter*/
+    (iternextfunc)RTDBIterValuesVals_tp_iternext, /*tp_iternext*/
+    DBIter_tp_methods,                        /*tp_methods*/
+};
+
+
+/*******************************************************************************
 * RTDBType
 *******************************************************************************/
 
@@ -679,6 +954,58 @@ RTDB_metasearch(RTDB *notused, PyObject *args)
 }
 
 
+/* RTDB.itervalues() */
+PyDoc_STRVAR(RTDB_itervalues_doc,
+"itervalues()\n\
+\n\
+Return an iterator over the database's values.");
+
+static PyObject *
+RTDB_itervalues(RTDB *self)
+{
+    return new_RDBBaseIter((RDBBase *)self, &RTDBIterValuesType);
+}
+
+
+/* RTDB.iteritems() */
+PyDoc_STRVAR(RTDB_iteritems_doc,
+"iteritems()\n\
+\n\
+Return an iterator over the database's items.");
+
+static PyObject *
+RTDB_iteritems(RTDB *self)
+{
+    return new_RDBBaseIter((RDBBase *)self, &RTDBIterItemsType);
+}
+
+
+/* RTDB.itervalueskeys() */
+PyDoc_STRVAR(RTDB_itervalueskeys_doc,
+"itervalueskeys()\n\
+\n\
+Return an iterator over the database's values' keys.");
+
+static PyObject *
+RTDB_itervalueskeys(RTDB *self)
+{
+    return new_RDBBaseIter((RDBBase *)self, &RTDBIterValuesKeysType);
+}
+
+
+/* RTDB.itervaluesvals() */
+PyDoc_STRVAR(RTDB_itervaluesvals_doc,
+"itervaluesvals()\n\
+\n\
+Return an iterator over the database's values' values.");
+
+static PyObject *
+RTDB_itervaluesvals(RTDB *self)
+{
+    return new_RDBBaseIter((RDBBase *)self, &RTDBIterValuesValsType);
+}
+
+
 /* RTDBType.tp_methods */
 static PyMethodDef RTDB_tp_methods[] = {
     {"open", (PyCFunction)RTDB_open, METH_VARARGS | METH_KEYWORDS, RTDB_open_doc},
@@ -694,6 +1021,13 @@ static PyMethodDef RTDB_tp_methods[] = {
     {"query", (PyCFunction)RTDB_query, METH_NOARGS, RTDB_query_doc},
     {"metasearch", (PyCFunction)RTDB_metasearch, METH_VARARGS | METH_STATIC,
      RTDB_metasearch_doc},
+    {"itervalues", (PyCFunction)RTDB_itervalues, METH_NOARGS,
+     RTDB_itervalues_doc},
+    {"iteritems", (PyCFunction)RTDB_iteritems, METH_NOARGS, RTDB_iteritems_doc},
+    {"itervalueskeys", (PyCFunction)RTDB_itervalueskeys, METH_NOARGS,
+     RTDB_itervalueskeys_doc},
+    {"itervaluesvals", (PyCFunction)RTDB_itervaluesvals, METH_NOARGS,
+     RTDB_itervaluesvals_doc},
     {NULL}  /* Sentinel */
 };
 
