@@ -125,8 +125,15 @@ init_tyrant(void)
     /* checking types */
     if (
         PyType_Ready(&RDBBaseType) ||
+        PyType_Ready(&RDBBaseIterKeysType) ||
         PyType_Ready(&RDBType) ||
+        PyType_Ready(&RDBIterValuesType) ||
+        PyType_Ready(&RDBIterItemsType) ||
         PyType_Ready(&RTDBType) ||
+        PyType_Ready(&RTDBIterValuesType) ||
+        PyType_Ready(&RTDBIterItemsType) ||
+        PyType_Ready(&RTDBIterValuesKeysType) ||
+        PyType_Ready(&RTDBIterValuesValsType) ||
         PyType_Ready(&RTDBQueryType)
        ) {
         return NULL;
