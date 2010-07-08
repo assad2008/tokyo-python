@@ -230,6 +230,27 @@ Remote Database --- :class:`RDB`
         Flush modifications to the database file.
 
 
+    .. method:: iterkeys
+
+        Return an iterator over the database's keys.
+
+        .. versionadded:: 0.6.1
+
+
+    .. method:: itervalues
+
+        Return an iterator over the database's values.
+
+        .. versionadded:: 0.6.1
+
+
+    .. method:: iteritems
+
+        Return an iterator over the database's items (``(key, value)`` pairs).
+
+        .. versionadded:: 0.6.1
+
+
     .. method:: searchkeys(prefix[, max])
 
         Return a frozenset of keys starting with *prefix*. If given, *max* is
@@ -272,28 +293,6 @@ Remote Database --- :class:`RDB`
 
         .. note::
             Optimizing a read only database is an invalid operation.
-
-
-    Methods :meth:`keys`, :meth:`values` and :meth:`items` are not yet
-    implemented (mainly because I didn't settle on how to do it: should they
-    return :class:`Iterable`, :class:`Iterator`, :class:`MappingView`, etc.?).
-    Any help would be greatly appreciated in this matter.
-
-    For the time being, for those of you who really need these methods, it's
-    trivial to implement them in python. Here is an example using generators::
-
-        from tokyo.tyrant import RDB as _RDB
-
-        class RDB(_RDB):
-
-            def keys(self):
-                return (key for key in self)
-
-            def values(self):
-                return (self[key] for key in self)
-
-            def items(self):
-                return ((key, self[key]) for key in self)
 
 
     .. attribute:: size
