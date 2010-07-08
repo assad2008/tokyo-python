@@ -132,6 +132,34 @@ class BDBTestIter(BDBTest):
         self.assertEqual({b"a": b"1", b"b": b"2", b"c": b"3"},
                          dict(self.db.iteritems()))
 
+    def test_iterkeys_duplicate(self):
+        self.db[b"a"] = b"1"
+        self.db[b"b"] = b"21"
+        self.db.put(b"b", b"22", True)
+        self.db.put(b"b", b"23", True)
+        self.db[b"c"] = b"3"
+        self.assertEqual([b"a", b"b", b"b", b"b", b"c"],
+                         sorted(list(self.db.iterkeys())))
+
+    def test_itervalues_duplicate(self):
+        self.db[b"a"] = b"1"
+        self.db[b"b"] = b"21"
+        self.db.put(b"b", b"22", True)
+        self.db.put(b"b", b"23", True)
+        self.db[b"c"] = b"3"
+        self.assertEqual([b"1", b"21", b"22", b"23", b"3"],
+                         sorted(list(self.db.itervalues())))
+
+    def test_iteritems_duplicate(self):
+        self.db[b"a"] = b"1"
+        self.db[b"b"] = b"21"
+        self.db.put(b"b", b"22", True)
+        self.db.put(b"b", b"23", True)
+        self.db[b"c"] = b"3"
+        self.assertEqual([(b"a", b"1"), (b"b", b"21"), (b"b", b"22"),
+                          (b"b", b"23"), (b"c", b"3")],
+                         sorted(list(self.db.iteritems())))
+
 
 class BDBTestPut(BDBTest):
 
@@ -242,21 +270,27 @@ class BDBTestMisc(BDBTest):
         self.db[b"key2"] = b"2"
         self.db[b"key3"] = b"3"
         self.db[b"akey"] = b"4"
-        self.assertEqual(self.db.searchkeys(b"k"), frozenset((b"key1", b"key2", b"key3")))
-        self.assertEqual(self.db.searchkeys(b"k", 2), frozenset((b"key1", b"key2")))
+        self.assertEqual(self.db.searchkeys(b"k"),
+                         frozenset((b"key1", b"key2", b"key3")))
+        self.assertEqual(self.db.searchkeys(b"k", 2),
+                         frozenset((b"key1", b"key2")))
         self.assertEqual(self.db.searchkeys(b"z"), frozenset())
         self.assertEqual(self.db.searchkeys(b"a"), frozenset((b"akey",)))
 
     def test_range(self):
-        for key, value in [(b"a", b"a"), (b"b", b"b"), (b"c", b"c"), (b"d", b"d")]:
+        for key, value in [(b"a", b"a"), (b"b", b"b"), (b"c", b"c"),
+                           (b"d", b"d")]:
             self.db[key] = value
         self.assertEqual(self.db.range(), frozenset((b"a", b"b", b"c", b"d")))
-        self.assertEqual(self.db.range(b"b", b"d"), frozenset((b"b", b"c", b"d")))
-        self.assertEqual(self.db.range(b"b", b"z"), frozenset((b"b", b"c", b"d")))
+        self.assertEqual(self.db.range(b"b", b"d"),
+                         frozenset((b"b", b"c", b"d")))
+        self.assertEqual(self.db.range(b"b", b"z"),
+                         frozenset((b"b", b"c", b"d")))
         self.assertEqual(self.db.range(b"z", b"b"), frozenset())
         self.assertEqual(self.db.range(b"a", b"a"), frozenset((b"a",)))
         self.assertEqual(self.db.range(b"A", b"Z"), frozenset())
-        self.assertEqual(self.db.range(b"A", b"z"), frozenset((b"a", b"b", b"c", b"d")))
+        self.assertEqual(self.db.range(b"A", b"z"),
+                         frozenset((b"a", b"b", b"c", b"d")))
         self.assertEqual(self.db.range(b"z", b"A"), frozenset())
         self.assertEqual(self.db.range(max=2), frozenset((b"a", b"b")))
 
@@ -306,12 +340,6 @@ class BDBTestDuplicate(BDBTest):
 
 
 class BDBTestCursor(BDBTest):
-
-    def test_basic(self):
-        self.db.putdup(b"a", [b"1", b"2"])
-        self.assertEqual(tuple(self.db.iterkeys()), (b"a", b"a"))
-        self.assertEqual(tuple(self.db.itervalues()), (b"1", b"2"))
-        self.assertEqual(tuple(self.db.iteritems()), ((b"a", b"1"), (b"a", b"2")))
 
     def test_first_next(self):
         c = self.db.cursor()
@@ -405,6 +433,130 @@ class BDBTestCursor(BDBTest):
         self.assertRaises(Error, c.item)
 
 
+class BDBTestNullBytes(BDBTest):
+
+    def test_itervalues(self):
+        self.db[b"ab"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual([b"ab", b"c\0d"], sorted(list(self.db.itervalues())))
+
+    def test_iteritems(self):
+        self.db[b"ab"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual({b"ab": b"ab", b"cd": b"c\0d"},
+                         dict(self.db.iteritems()))
+
+    def test_getitem(self):
+        self.assertRaises(TypeError, self.db.__getitem__, b"b\0c")
+        self.db[b"ab"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual(b"c\0d", self.db.__getitem__(b"cd"))
+        self.assertEqual(b"c\0d", self.db[b"cd"])
+
+    def test_setitem(self):
+        self.assertRaises(TypeError, self.db.__setitem__, b"b\0c", b"bc")
+        self.db.__setitem__(b"ab", b"ab")
+        self.db.__setitem__(b"cd", b"c\0d")
+        self.assertEqual(b"c\0d", self.db[b"cd"])
+
+    def test_get(self):
+        self.assertRaises(TypeError, self.db.get, b"b\0c")
+        self.db[b"ab"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual(b"c\0d", self.db.get(b"cd"))
+
+    def test_remove(self):
+        self.assertRaises(TypeError, self.db.remove, b"b\0c")
+
+    def test_put(self):
+        self.assertRaises(TypeError, self.db.put, b"b\0c", b"bc")
+        self.db.put(b"ab", b"ab")
+        self.db.put(b"cd", b"c\0d")
+        self.assertEqual(b"c\0d", self.db[b"cd"])
+
+    def test_putkeep(self):
+        self.assertRaises(TypeError, self.db.putkeep, b"b\0c", b"bc")
+        self.db.putkeep(b"ab", b"ab")
+        self.db.putkeep(b"cd", b"c\0d")
+        self.assertRaises(KeyError, self.db.putkeep, b"cd", b"g\0h")
+
+    def test_putcat(self):
+        self.assertRaises(TypeError, self.db.putcat, b"b\0c", b"bc")
+        self.db.putcat(b"ab", b"ab")
+        self.db.putcat(b"ab", b"c\0d")
+        self.assertEqual(self.db[b"ab"], b"abc\0d")
+
+    def test_putdup(self):
+        self.assertRaises(TypeError, self.db.putdup, b"b\0c", (b"bc", b"cd"))
+        self.db.putdup(b"bc", [b"bc", b"c\0d"])
+        self.assertEqual(self.db.get(b"bc", True), (b"bc", b"c\0d"))
+
+    def test_searchkeys(self):
+        self.assertRaises(TypeError, self.db.searchkeys, b"b\0c")
+
+    def test_range(self):
+        self.assertRaises(TypeError, self.db.range, b"b\0c", b"cd")
+        self.assertRaises(TypeError, self.db.range, b"bc", b"c\0d")
+        self.assertRaises(TypeError, self.db.range, b"b\0c", b"c\0d")
+
+    def test_addint(self):
+        self.assertRaises(TypeError, self.db.addint, b"b\0c", 1)
+
+    def test_adddouble(self):
+        self.assertRaises(TypeError, self.db.adddouble, b"b\0c", 1.0)
+
+
+class BDBTestNullBytesCursor(BDBTest):
+
+    def test_first_next(self):
+        c = self.db.cursor()
+        self.assertRaises(StopIteration, c.next)
+        self.db.putdup(b"ab", [b"ab", b"c\0d"])
+        c.first()
+        self.assertEqual(c.value(), b"ab")
+        self.assertEqual(c.item(), (b"ab", b"ab"))
+        c.next()
+        self.assertEqual(c.value(), b"c\0d")
+        self.assertEqual(c.item(), (b"ab", b"c\0d"))
+        self.assertRaises(StopIteration, c.next)
+
+    def test_last_prev(self):
+        c = self.db.cursor()
+        self.assertRaises(StopIteration, c.prev)
+        self.db.putdup(b"ab", [b"ab", b"c\0d"])
+        c.last()
+        self.assertEqual(c.value(), b"c\0d")
+        self.assertEqual(c.item(), (b"ab", b"c\0d"))
+        c.prev()
+        self.assertEqual(c.value(), b"ab")
+        self.assertEqual(c.item(), (b"ab", b"ab"))
+        self.assertRaises(StopIteration, c.prev)
+
+    def test_jump(self):
+        self.db.putdup(b"ab", [b"c\0d", b"ab"])
+        self.db.putdup(b"c", [b"e\0f", b"ab"])
+        c = self.db.cursor()
+        self.assertRaises(TypeError, c.jump, b"b\0c")
+        c.jump(b"b")
+        self.assertEqual(c.item(), (b"c", b"e\0f"))
+        self.assertRaises(StopIteration, c.jump, b"d")
+        c.jump(b"ab")
+        self.assertEqual(c.item(), (b"ab", b"c\0d"))
+
+    def test_put(self):
+        self.db.putdup(b"ab", [b"c\0d", b"ab"])
+        self.db.putdup(b"c", [b"e\0f", b"ab"])
+        c = self.db.cursor()
+        c.jump(b"c")
+        self.assertEqual(c.item(), (b"c", b"e\0f"))
+        self.assertEqual(len(self.db), 4)
+        c.put(b"g\0h")
+        self.assertEqual(len(self.db), 4)
+        self.assertEqual(c.item(), (b"c", b"g\0h"))
+        c.next()
+        self.assertEqual(c.item(), (b"c", b"ab"))
+
+
 all_tests = (
              "BDBTestDict",
              "BDBTestIter",
@@ -413,6 +565,8 @@ all_tests = (
              "BDBTestMisc",
              "BDBTestDuplicate",
              "BDBTestCursor",
+             "BDBTestNullBytes",
+             "BDBTestNullBytesCursor",
             )
 
 suite = unittest.TestLoader().loadTestsFromNames(all_tests,

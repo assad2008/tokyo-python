@@ -45,6 +45,7 @@ class RDBTestSuite(testsuite.TestSuite):
         subprocess.check_call(STOP_CMD, shell=True)
         time.sleep(0.1)
         os.remove(DBFILE)
+        os.remove(PIDFILE)
 
 
 class RDBTest(unittest.TestCase):
@@ -123,14 +124,12 @@ class RDBTestDict(RDBTest):
 class RDBTestIter(RDBTest):
 
     def test_iter(self):
-        i = iter(self.db)
-        self.assertEqual(len(i), 0)
         self.db[b"a"] = b"1"
         self.db[b"b"] = b"2"
         self.db[b"c"] = b"3"
         i = iter(self.db)
-        self.assertEqual(len(i), len(self.db))
         self.assertTrue(b"a" in i)
+        i = iter(self.db)
         self.assertEqual([b"a", b"b", b"c"], sorted(i))
         i = iter(self.db)
         a = next(i)
@@ -139,12 +138,39 @@ class RDBTestIter(RDBTest):
         self.assertRaises(StopIteration, next, i)
         self.assertEqual([b"a", b"b", b"c"], sorted((a, b, c)))
         i = iter(self.db)
-        self.assertEqual(len(i), 3)
         a = next(i)
         del self.db[b"b"]
-        self.db[b"d"] = b"4"
-        self.assertEqual(len(i), 3)
         self.assertRaises(Error, next, i)
+        i = iter(self.db)
+        a = next(i)
+        self.db[b"d"] = b"4"
+        self.assertRaises(Error, next, i)
+        i = iter(self.db)
+        a = next(i)
+        del self.db[b"d"]
+        self.db[b"d"] = b"5"
+        self.assertRaises(Error, next, i)
+
+    def test_iterkeys(self):
+        self.db[b"a"] = b"1"
+        self.db[b"b"] = b"2"
+        self.db[b"c"] = b"3"
+        self.assertEqual([b"a", b"b", b"c"],
+                         sorted(list(self.db.iterkeys())))
+
+    def test_itervalues(self):
+        self.db[b"a"] = b"1"
+        self.db[b"b"] = b"2"
+        self.db[b"c"] = b"3"
+        self.assertEqual([b"1", b"2", b"3"],
+                         sorted(list(self.db.itervalues())))
+
+    def test_iteritems(self):
+        self.db[b"a"] = b"1"
+        self.db[b"b"] = b"2"
+        self.db[b"c"] = b"3"
+        self.assertEqual({b"a": b"1", b"b": b"2", b"c": b"3"},
+                         dict(self.db.iteritems()))
 
 
 class RDBTestPut(RDBTest):
@@ -217,11 +243,75 @@ class RDBTestMisc(RDBTest):
         self.assertRaises(KeyError, self.db.adddouble, b"kfloat", 1.0)
 
 
+class RDBTestNullBytes(RDBTest):
+
+    def test_itervalues(self):
+        self.db[b"ab"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual([b"ab", b"c\0d"], sorted(list(self.db.itervalues())))
+
+    def test_iteritems(self):
+        self.db[b"ab"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual({b"ab": b"ab", b"cd": b"c\0d"},
+                         dict(self.db.iteritems()))
+
+    def test_getitem(self):
+        self.assertRaises(TypeError, self.db.__getitem__, b"b\0c")
+        self.db[b"ab"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual(b"c\0d", self.db.__getitem__(b"cd"))
+        self.assertEqual(b"c\0d", self.db[b"cd"])
+
+    def test_setitem(self):
+        self.assertRaises(TypeError, self.db.__setitem__, b"b\0c", b"bc")
+        self.db.__setitem__(b"ab", b"ab")
+        self.db.__setitem__(b"cd", b"c\0d")
+        self.assertEqual(b"c\0d", self.db[b"cd"])
+
+    def test_get(self):
+        self.assertRaises(TypeError, self.db.get, b"b\0c")
+        self.db[b"ab"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual(b"c\0d", self.db.get(b"cd"))
+
+    def test_remove(self):
+        self.assertRaises(TypeError, self.db.remove, b"b\0c")
+
+    def test_put(self):
+        self.assertRaises(TypeError, self.db.put, b"b\0c", b"bc")
+        self.db.put(b"ab", b"ab")
+        self.db.put(b"cd", b"c\0d")
+        self.assertEqual(b"c\0d", self.db[b"cd"])
+
+    def test_putkeep(self):
+        self.assertRaises(TypeError, self.db.putkeep, b"b\0c", b"bc")
+        self.db.putkeep(b"ab", b"ab")
+        self.db.putkeep(b"cd", b"c\0d")
+        self.assertRaises(KeyError, self.db.putkeep, b"cd", b"g\0h")
+
+    def test_putcat(self):
+        self.assertRaises(TypeError, self.db.putcat, b"b\0c", b"bc")
+        self.db.putcat(b"ab", b"ab")
+        self.db.putcat(b"ab", b"c\0d")
+        self.assertEqual(self.db[b"ab"], b"abc\0d")
+
+    def test_searchkeys(self):
+        self.assertRaises(TypeError, self.db.searchkeys, b"b\0c")
+
+    def test_addint(self):
+        self.assertRaises(TypeError, self.db.addint, b"b\0c", 1)
+
+    def test_adddouble(self):
+        self.assertRaises(TypeError, self.db.adddouble, b"b\0c", 1.0)
+
+
 all_tests = (
              "RDBTestDict",
              "RDBTestIter",
              "RDBTestPut",
              "RDBTestMisc",
+             "RDBTestNullBytes",
             )
 
 suite = RDBTestSuite(unittest.TestLoader().loadTestsFromNames(all_tests,
