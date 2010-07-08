@@ -266,12 +266,85 @@ class HDBTestMisc(HDBTest):
         self.assertRaises(KeyError, self.db.adddouble, b"kfloat", 1.0)
 
 
+class HDBTestNullBytes(HDBTest):
+
+    def test_itervalues(self):
+        self.db[b"ab"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual([b"ab", b"c\0d"], sorted(list(self.db.itervalues())))
+
+    def test_iteritems(self):
+        self.db[b"ab"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual({b"ab": b"ab", b"cd": b"c\0d"},
+                         dict(self.db.iteritems()))
+
+    def test_getitem(self):
+        self.assertRaises(TypeError, self.db.__getitem__, b"b\0c")
+        self.db[b"ab"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual(b"c\0d", self.db.__getitem__(b"cd"))
+        self.assertEqual(b"c\0d", self.db[b"cd"])
+
+    def test_setitem(self):
+        self.assertRaises(TypeError, self.db.__setitem__, b"b\0c", b"bc")
+        self.db.__setitem__(b"ab", b"ab")
+        self.db.__setitem__(b"cd", b"c\0d")
+        self.assertEqual(b"c\0d", self.db[b"cd"])
+
+    def test_get(self):
+        self.assertRaises(TypeError, self.db.get, b"b\0c")
+        self.db[b"ab"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual(b"c\0d", self.db.get(b"cd"))
+
+    def test_remove(self):
+        self.assertRaises(TypeError, self.db.remove, b"b\0c")
+
+    def test_put(self):
+        self.assertRaises(TypeError, self.db.put, b"b\0c", b"bc")
+        self.db.put(b"ab", b"ab")
+        self.db.put(b"cd", b"c\0d")
+        self.assertEqual(b"c\0d", self.db[b"cd"])
+
+    def test_putkeep(self):
+        self.assertRaises(TypeError, self.db.putkeep, b"b\0c", b"bc")
+        self.db.putkeep(b"ab", b"ab")
+        self.db.putkeep(b"cd", b"c\0d")
+        self.assertRaises(KeyError, self.db.putkeep, b"cd", b"g\0h")
+
+    def test_putcat(self):
+        self.assertRaises(TypeError, self.db.putcat, b"b\0c", b"bc")
+        self.db.putcat(b"ab", b"ab")
+        self.db.putcat(b"ab", b"c\0d")
+        self.assertEqual(self.db[b"ab"], b"abc\0d")
+
+    def test_putasync(self):
+        # TODO: use multiprocessing/threading
+        self.assertRaises(TypeError, self.db.putasync, b"b\0c", b"bc")
+        self.db.putasync(b"ab", b"ab")
+        self.db.putasync(b"cd", b"c\0d")
+        self.db.sync()
+        self.assertEqual(self.db[b"ab"], b"ab")
+        self.assertEqual(self.db[b"cd"], b"c\0d")
+
+    def test_searchkeys(self):
+        self.assertRaises(TypeError, self.db.searchkeys, b"b\0c")
+
+    def test_addint(self):
+        self.assertRaises(TypeError, self.db.addint, b"b\0c", 1)
+
+    def test_adddouble(self):
+        self.assertRaises(TypeError, self.db.adddouble, b"b\0c", 1.0)
+
+
 all_tests = (
              "HDBTestDict",
              "HDBTestIter",
              "HDBTestPut",
              "HDBTestTransaction",
              "HDBTestMisc",
+             "HDBTestNullBytes",
             )
 
 suite = unittest.TestLoader().loadTestsFromNames(all_tests,

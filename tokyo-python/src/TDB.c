@@ -759,7 +759,7 @@ int TDB_Contains(TDB *self, PyObject *pykey)
     int key_size;
     TCMAP *value;
 
-    if (bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size, true)) {
         return -1;
     }
     value = tctdbget(self->tdb, key, key_size);
@@ -805,7 +805,7 @@ TDB_GetItem(TDB *self, PyObject *pykey)
     TCMAP *value;
     PyObject *pyvalue;
 
-    if (bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size, true)) {
         return NULL;
     }
     value = tctdbget(self->tdb, key, key_size);
@@ -826,7 +826,7 @@ TDB_SetItem(TDB *self, PyObject *pykey, PyObject *pyvalue)
     int key_size;
     TCMAP *value;
 
-    if (bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size, true)) {
         return -1;
     }
     if (pyvalue) {
@@ -1091,7 +1091,7 @@ TDB_putkeep(TDB *self, PyObject *args, PyObject *kwargs)
     if (!pyvalue) {
         return NULL;
     }
-    if (bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size, true)) {
         return NULL;
     }
     value = dict_to_tcmap(pyvalue);
@@ -1131,7 +1131,7 @@ TDB_putcat(TDB *self, PyObject *args, PyObject *kwargs)
     if (!pyvalue) {
         return NULL;
     }
-    if (bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size, true)) {
         return NULL;
     }
     value = dict_to_tcmap(pyvalue);
@@ -1183,7 +1183,7 @@ TDB_searchkeys(TDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O|i:searchkeys", &pyprefix, &max)) {
         return NULL;
     }
-    if (bytes_to_void(pyprefix, &prefix, &prefix_size)) {
+    if (bytes_to_void(pyprefix, &prefix, &prefix_size, true)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS

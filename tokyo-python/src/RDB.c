@@ -21,7 +21,7 @@ RDB_Contains(RDB *self, PyObject *pykey)
     int key_size, value_size;
     RDBBase *rdbbase = (RDBBase *)self;
 
-    if (bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size, true)) {
         return -1;
     }
     Py_BEGIN_ALLOW_THREADS
@@ -61,7 +61,7 @@ RDB_GetItem(RDB *self, PyObject *pykey)
     PyObject *pyvalue;
     RDBBase *rdbbase = (RDBBase *)self;
 
-    if (bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size, true)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
@@ -85,11 +85,11 @@ RDB_SetItem(RDB *self, PyObject *pykey, PyObject *pyvalue)
     bool result;
     RDBBase *rdbbase = (RDBBase *)self;
 
-    if (bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size, true)) {
         return -1;
     }
     if (pyvalue) {
-        if (bytes_to_void(pyvalue, &value, &value_size)) {
+        if (bytes_to_void(pyvalue, &value, &value_size, false)) {
             return -1;
         }
         Py_BEGIN_ALLOW_THREADS
@@ -225,8 +225,8 @@ RDB_putkeep(RDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "OO:putkeep", &pykey, &pyvalue)) {
         return NULL;
     }
-    if (bytes_to_void(pykey, &key, &key_size) ||
-        bytes_to_void(pyvalue, &value, &value_size)) {
+    if (bytes_to_void(pykey, &key, &key_size, true) ||
+        bytes_to_void(pyvalue, &value, &value_size, false)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
@@ -259,8 +259,8 @@ RDB_putcat(RDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "OO:putcat", &pykey, &pyvalue)) {
         return NULL;
     }
-    if (bytes_to_void(pykey, &key, &key_size) ||
-        bytes_to_void(pyvalue, &value, &value_size)) {
+    if (bytes_to_void(pykey, &key, &key_size, true) ||
+        bytes_to_void(pyvalue, &value, &value_size, false)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
@@ -292,8 +292,8 @@ RDB_putnb(RDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "OO:putnb", &pykey, &pyvalue)) {
         return NULL;
     }
-    if (bytes_to_void(pykey, &key, &key_size) ||
-        bytes_to_void(pyvalue, &value, &value_size)) {
+    if (bytes_to_void(pykey, &key, &key_size, true) ||
+        bytes_to_void(pyvalue, &value, &value_size, false)) {
         return NULL;
     }
     if (!tcrdbputnr(rdbbase->rdb, key, key_size, value, value_size)) {
@@ -328,7 +328,7 @@ RDB_addint(RDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "Oi:addint", &pykey, &num)) {
         return NULL;
     }
-    if (bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size, true)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
@@ -384,7 +384,7 @@ RDB_adddouble(RDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "Od:adddouble", &pykey, &num)) {
         return NULL;
     }
-    if (bytes_to_void(pykey, &key, &key_size)) {
+    if (bytes_to_void(pykey, &key, &key_size, true)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS

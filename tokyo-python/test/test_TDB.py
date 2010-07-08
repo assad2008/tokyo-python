@@ -65,7 +65,9 @@ class TDBTestDict(TDBTest):
         self.db[b"c"] = {b"test": b"c"}
         self.db[b"a"] = {b"test": b"aa"}
         d = dict(self.db.iteritems())
-        self.assertEqual(d, {b"a": {b"test": b"aa"}, b"b": {b"test": b"b"}, b"c": {b"test": b"c"}})
+        self.assertEqual({b"a": {b"test": b"aa"}, b"b": {b"test": b"b"},
+                          b"c": {b"test": b"c"}},
+                         d)
         del self.db[b"b"]
         self.assertEqual(len(self.db), 2)
         d = dict(self.db.iteritems())
@@ -235,7 +237,7 @@ class TDBTestMisc(TDBTest):
 
     def test_copy(self):
         self.db[b"a"] = {b"test": b"a"}
-        self.db[b"b"] = {b"test": b"b"}
+        self.db[b"b"] = {b"test": b"a"}
         path = os.path.join(tempfile.gettempdir(), "tmp_tc_test2.tct")
         self.db.copy(path)
         db = TDB()
@@ -250,10 +252,69 @@ class TDBTestMisc(TDBTest):
         self.db[b"key2"] = {b"test": b"2"}
         self.db[b"key3"] = {b"test": b"3"}
         self.db[b"akey"] = {b"test": b"a"}
-        self.assertEqual(self.db.searchkeys(b"k"), frozenset((b"key1", b"key2", b"key3")))
+        self.assertEqual(self.db.searchkeys(b"k"),
+                         frozenset((b"key1", b"key2", b"key3")))
         self.assertEqual(self.db.searchkeys(b"k", 2), frozenset((b"key1", b"key2")))
         self.assertEqual(self.db.searchkeys(b"z"), frozenset())
         self.assertEqual(self.db.searchkeys(b"a"), frozenset((b"akey",)))
+
+
+class TDBTestNullBytes(TDBTest):
+
+    def test_itervalues(self):
+        self.db[b"ab"] = {b"test": b"ab"}
+        self.db[b"cd"] = {b"test": b"c\0d"}
+        self.assertEqual([{b"test": b"ab"}, {b"test": b"c\0d"}],
+                         sorted(list(self.db.itervalues())))
+
+    def test_iteritems(self):
+        self.db[b"ab"] = {b"test": b"ab"}
+        self.db[b"cd"] = {b"test": b"c\0d"}
+        self.assertEqual({b"ab": {b"test": b"ab"}, b"cd": {b"test": b"c\0d"}},
+                         dict(self.db.iteritems()))
+
+    def test_getitem(self):
+        self.assertRaises(TypeError, self.db.__getitem__, b"b\0c")
+        self.db[b"ab"] = {b"test": b"ab"}
+        self.db[b"cd"] = {b"test": b"c\0d"}
+        self.assertEqual({b"test": b"c\0d"}, self.db.__getitem__(b"cd"))
+        self.assertEqual({b"test": b"c\0d"}, self.db[b"cd"])
+
+    def test_setitem(self):
+        self.assertRaises(TypeError, self.db.__setitem__, b"b\0c", b"bc")
+        self.db.__setitem__(b"ab", {b"test": b"ab"})
+        self.db.__setitem__(b"cd", {b"test": b"c\0d"})
+        self.assertEqual({b"test": b"c\0d"}, self.db[b"cd"])
+
+    def test_get(self):
+        self.assertRaises(TypeError, self.db.get, b"b\0c")
+        self.db[b"ab"] = {b"test": b"ab"}
+        self.db[b"cd"] = {b"test": b"c\0d"}
+        self.assertEqual({b"test": b"c\0d"}, self.db.get(b"cd"))
+
+    def test_remove(self):
+        self.assertRaises(TypeError, self.db.remove, b"b\0c")
+
+    def test_put(self):
+        self.assertRaises(TypeError, self.db.put, b"b\0c", b"bc")
+        self.db.put(b"ab", {b"test": b"ab"})
+        self.db.put(b"cd", {b"test": b"c\0d"})
+        self.assertEqual({b"test": b"c\0d"}, self.db[b"cd"])
+
+    def test_putkeep(self):
+        self.assertRaises(TypeError, self.db.putkeep, b"b\0c", b"bc")
+        self.db.putkeep(b"ab", {b"test": b"ab"})
+        self.db.putkeep(b"cd", {b"test": b"c\0d"})
+        self.assertRaises(KeyError, self.db.putkeep, b"cd", {b"test": b"g\0h"})
+
+    def test_putcat(self):
+        self.assertRaises(TypeError, self.db.putcat, b"b\0c", b"bc")
+        self.db.putcat(b"ab", {b"test1": b"ab"})
+        self.db.putcat(b"ab", {b"test2": b"c\0d"})
+        self.assertEqual(self.db[b"ab"], {b"test1": b"ab", b"test2": b"c\0d"})
+
+    def test_searchkeys(self):
+        self.assertRaises(TypeError, self.db.searchkeys, b"b\0c")
 
 
 all_tests = (
@@ -262,6 +323,7 @@ all_tests = (
              "TDBTestPut",
              "TDBTestTransaction",
              "TDBTestMisc",
+             "TDBTestNullBytes",
             )
 
 suite = unittest.TestLoader().loadTestsFromNames(all_tests,

@@ -94,10 +94,6 @@ B+ Tree Database --- :class:`BDB`
 
         Return an iterator over the keys of the database.
 
-        .. note::
-            Better use a :class:`BDBCursor` to iterate over a database with
-            duplicates.
-
 
     .. method:: tune(lmemb, nmemb, bnum, apow, fpow, opts)
 

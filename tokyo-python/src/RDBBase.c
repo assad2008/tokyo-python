@@ -410,7 +410,7 @@ RDBBase_searchkeys(RDBBase *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O|i:searchkeys", &pyprefix, &max)) {
         return NULL;
     }
-    if (bytes_to_void(pyprefix, &prefix, &prefix_size)) {
+    if (bytes_to_void(pyprefix, &prefix, &prefix_size, true)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
