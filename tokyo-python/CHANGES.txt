@@ -30,6 +30,7 @@ Release 0.6.1
 - added iter[keys/values/items] methods to RDB and RTDB
 - added itervalues[keys/vals] methods to RTDB
 - allow null bytes in values - `Issue 3 <http://code.google.com/p/tokyo-python/issues/detail?id=3>`_ fixed
+- added libraries version checking in setup.py
 
 
 Release 0.6.0
