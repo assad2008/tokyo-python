@@ -551,7 +551,7 @@ int RTDB_Contains(RTDB *self, PyObject *pykey)
     TCMAP *value;
     RDBBase *rdbbase = (RDBBase *)self;
 
-    if (bytes_to_void(pykey, &key, &key_size, true)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
     Py_BEGIN_ALLOW_THREADS
@@ -592,7 +592,7 @@ RTDB_GetItem(RTDB *self, PyObject *pykey)
     PyObject *pyvalue;
     RDBBase *rdbbase = (RDBBase *)self;
 
-    if (bytes_to_void(pykey, &key, &key_size, true)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
@@ -617,7 +617,7 @@ RTDB_SetItem(RTDB *self, PyObject *pykey, PyObject *pyvalue)
     bool result;
     RDBBase *rdbbase = (RDBBase *)self;
 
-    if (bytes_to_void(pykey, &key, &key_size, true)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
     if (pyvalue) {
@@ -771,7 +771,7 @@ RTDB_putkeep(RTDB *self, PyObject *args, PyObject *kwargs)
     if (!pyvalue) {
         return NULL;
     }
-    if (bytes_to_void(pykey, &key, &key_size, true)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     value = dict_to_tcmap(pyvalue);
@@ -815,7 +815,7 @@ RTDB_putcat(RTDB *self, PyObject *args, PyObject *kwargs)
     if (!pyvalue) {
         return NULL;
     }
-    if (bytes_to_void(pykey, &key, &key_size, true)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     value = dict_to_tcmap(pyvalue);

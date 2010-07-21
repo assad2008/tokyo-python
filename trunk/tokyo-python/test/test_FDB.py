@@ -263,55 +263,35 @@ class FDBTestNullBytes(FDBTest):
         self.assertEqual({1: b"ab", 2: b"c\0d"}, dict(self.db.iteritems()))
 
     def test_getitem(self):
-        self.assertRaises(TypeError, self.db.__getitem__, b"b\0c")
         self.db[1] = b"ab"
         self.db[2] = b"c\0d"
         self.assertEqual(b"c\0d", self.db.__getitem__(2))
         self.assertEqual(b"c\0d", self.db[2])
 
     def test_setitem(self):
-        self.assertRaises(TypeError, self.db.__setitem__, b"b\0c", b"bc")
         self.db.__setitem__(1, b"ab")
         self.db.__setitem__(2, b"c\0d")
         self.assertEqual(b"c\0d", self.db[2])
 
     def test_get(self):
-        self.assertRaises(TypeError, self.db.get, b"b\0c")
         self.db[1] = b"ab"
         self.db[2] = b"c\0d"
         self.assertEqual(b"c\0d", self.db.get(2))
 
-    def test_remove(self):
-        self.assertRaises(TypeError, self.db.remove, b"b\0c")
-
     def test_put(self):
-        self.assertRaises(TypeError, self.db.put, b"b\0c", b"bc")
         self.db.put(1, b"ab")
         self.db.put(2, b"c\0d")
         self.assertEqual(b"c\0d", self.db[2])
 
     def test_putkeep(self):
-        self.assertRaises(TypeError, self.db.putkeep, b"b\0c", b"bc")
         self.db.putkeep(1, b"ab")
         self.db.putkeep(2, b"c\0d")
         self.assertRaises(KeyError, self.db.putkeep, 2, b"g\0h")
 
     def test_putcat(self):
-        self.assertRaises(TypeError, self.db.putcat, b"b\0c", b"bc")
         self.db.putcat(1, b"ab")
         self.db.putcat(1, b"c\0d")
         self.assertEqual(self.db[1], b"abc\0d")
-
-    def test_range(self):
-        self.assertRaises(TypeError, self.db.range, b"b\0c")
-        self.assertRaises(TypeError, self.db.range, upper=b"c\0d")
-        self.assertRaises(TypeError, self.db.range, b"b\0c", b"c\0d")
-
-    def test_addint(self):
-        self.assertRaises(TypeError, self.db.addint, b"b\0c", 1)
-
-    def test_adddouble(self):
-        self.assertRaises(TypeError, self.db.adddouble, b"b\0c", 1.0)
 
 
 all_tests = (

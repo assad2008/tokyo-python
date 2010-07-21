@@ -406,7 +406,7 @@ FDB_SetItem(FDB *self, PyObject *pykey, PyObject *pyvalue)
         return -1;
     }
     if (pyvalue) {
-        if (bytes_to_void(pyvalue, &value, &value_size, false)) {
+        if (bytes_to_void(pyvalue, &value, &value_size)) {
             return -1;
         }
         if (!tcfdbput(self->fdb, key, value, value_size)) {
@@ -654,7 +654,7 @@ FDB_putkeep(FDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "LO:putkeep", &key, &pyvalue)) {
         return NULL;
     }
-    if (bytes_to_void(pyvalue, &value, &value_size, false)) {
+    if (bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
     if (!tcfdbputkeep(self->fdb, key, value, value_size)) {
@@ -683,7 +683,7 @@ FDB_putcat(FDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "LO:putcat", &key, &pyvalue)) {
         return NULL;
     }
-    if (bytes_to_void(pyvalue, &value, &value_size, false)) {
+    if (bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
     if (!tcfdbputcat(self->fdb, key, value, value_size)) {

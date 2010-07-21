@@ -243,7 +243,7 @@ int NDB_Contains(NDB *self, PyObject *pykey)
     void *key, *value;
     int key_size, value_size;
 
-    if (bytes_to_void(pykey, &key, &key_size, true)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
     value = tcndbget(self->ndb, key, key_size, &value_size);
@@ -284,7 +284,7 @@ NDB_GetItem(NDB *self, PyObject *pykey)
     int key_size, value_size;
     PyObject *pyvalue;
 
-    if (bytes_to_void(pykey, &key, &key_size, true)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     value = tcndbget(self->ndb, key, key_size, &value_size);
@@ -304,11 +304,11 @@ NDB_SetItem(NDB *self, PyObject *pykey, PyObject *pyvalue)
     void *key, *value;
     int key_size, value_size;
 
-    if (bytes_to_void(pykey, &key, &key_size, true)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
     if (pyvalue) {
-        if (bytes_to_void(pyvalue, &value, &value_size, false)) {
+        if (bytes_to_void(pyvalue, &value, &value_size)) {
             return -1;
         }
         tcndbput(self->ndb, key, key_size, value, value_size);
@@ -432,8 +432,8 @@ NDB_putkeep(NDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "OO:putkeep", &pykey, &pyvalue)) {
         return NULL;
     }
-    if (bytes_to_void(pykey, &key, &key_size, true) ||
-        bytes_to_void(pyvalue, &value, &value_size, false)) {
+    if (bytes_to_void(pykey, &key, &key_size) ||
+        bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
     if (!tcndbputkeep(self->ndb, key, key_size, value, value_size)) {
@@ -461,8 +461,8 @@ NDB_putcat(NDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "OO:putcat", &pykey, &pyvalue)) {
         return NULL;
     }
-    if (bytes_to_void(pykey, &key, &key_size, true) ||
-        bytes_to_void(pyvalue, &value, &value_size, false)) {
+    if (bytes_to_void(pykey, &key, &key_size) ||
+        bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
     tcndbputcat(self->ndb, key, key_size, value, value_size);
@@ -490,7 +490,7 @@ NDB_searchkeys(NDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O|i:searchkeys", &pyprefix, &max)) {
         return NULL;
     }
-    if (bytes_to_void(pyprefix, &prefix, &prefix_size, true)) {
+    if (bytes_to_void(pyprefix, &prefix, &prefix_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
