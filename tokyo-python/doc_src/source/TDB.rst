@@ -474,6 +474,9 @@ Querying a Table Database --- :class:`TDBQuery`
             Calling :meth:`filter` multiple times with different conditions is
             equivalent to applying a logical ``AND`` between the conditions.
 
+            Unfortunately, due to a Tokyo Cabinet limitation, neither *column*
+            nor *expr* can contain null bytes.
+
 
     .. method:: sort(column, type)
 
@@ -482,6 +485,10 @@ Querying a Table Database --- :class:`TDBQuery`
         :param column: name of the column. An empty string means *key*.
         :type column: :class:`str` (Python2)/:class:`bytes` (Python3)
         :param type: sort type (and direction), see :ref:`tdbquery_sort_types`.
+
+        .. note::
+            Unfortunately, due to a Tokyo Cabinet limitation, *column* cannot
+            contain null bytes.
 
 
     .. method:: limit([max[, skip]])

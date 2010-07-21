@@ -3,7 +3,9 @@ import sys
 import os
 import tempfile
 
-from tokyo.cabinet import TDBOREADER, TDBOWRITER, TDBOCREAT, TDB, Error
+from tokyo.cabinet import (TDBOREADER, TDBOWRITER, TDBOCREAT, TDB, Error,
+                           TDBQCSTRBW, TDBQCNUMGE, TDBQOSTRASC, TDBQONUMDESC,
+                           TDBQPPUT)
 
 
 class TDBTest(unittest.TestCase):
@@ -259,6 +261,112 @@ class TDBTestMisc(TDBTest):
         self.assertEqual(self.db.searchkeys(b"a"), frozenset((b"akey",)))
 
 
+class TDBTestQuery(TDBTest):
+
+    def test_search(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        self.assertEqual(q.count(), 0)
+        self.assertEqual(q.search(), (b"key1", b"key2", b"key3", b"akey"))
+        self.assertEqual(q.count(), 4)
+
+    def test_filter_key(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        q.filter(b"", TDBQCSTRBW, b"ke")
+        self.assertEqual(q.count(), 0)
+        self.assertEqual(q.search(), (b"key1", b"key2", b"key3"))
+        self.assertEqual(q.count(), 3)
+
+    def test_filter_column(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        q.filter(b"test", TDBQCNUMGE, b"2")
+        self.assertEqual(q.count(), 0)
+        self.assertEqual(q.search(), (b"key2", b"key3"))
+        self.assertEqual(q.count(), 2)
+
+    def test_sort_key(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        q.sort(b"", TDBQOSTRASC)
+        self.assertEqual(q.count(), 0)
+        self.assertEqual(q.search(), (b"akey", b"key1", b"key2", b"key3"))
+        self.assertEqual(q.count(), 4)
+
+    def test_sort_column(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        q.sort(b"test", TDBQONUMDESC)
+        self.assertEqual(q.count(), 0)
+        self.assertEqual(q.search(), (b"key3", b"key2", b"key1", b"akey"))
+        self.assertEqual(q.count(), 4)
+
+    def test_limit(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        q.limit(2)
+        self.assertEqual(q.count(), 0)
+        self.assertEqual(q.search(), (b"key1", b"key2"))
+        self.assertEqual(q.count(), 2)
+        q.limit(-1, 2)
+        self.assertEqual(q.search(), (b"key3", b"akey"))
+        self.assertEqual(q.count(), 2)
+        q.limit(-1)
+        self.assertEqual(q.search(), (b"key1", b"key2", b"key3", b"akey"))
+        self.assertEqual(q.count(), 4)
+        q.limit(1, 2)
+        self.assertEqual(q.search(), (b"key3",))
+        self.assertEqual(q.count(), 1)
+
+    def test_remove(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        q.filter(b"test", TDBQCNUMGE, b"2")
+        self.assertEqual(len(self.db), 4)
+        q.remove()
+        self.assertEqual(len(self.db), 2)
+        self.assertEqual({b"key1": {b"test": b"1"}, b"akey": {b"test": b"a"}},
+                         dict(self.db.iteritems()))
+
+    def _process_cb(self, key, value):
+        value[b"test"] = key
+        return TDBQPPUT
+
+    def test_process(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        q.filter(b"", TDBQCSTRBW, b"ke")
+        q.process(self._process_cb)
+        self.assertEqual({b"key1": {b"test": b"key1"}, b"key2": {b"test": b"key2"},
+                          b"key3": {b"test": b"key3"}, b"akey": {b"test": b"a"}},
+                         dict(self.db.iteritems()))
+
+
 class TDBTestNullBytes(TDBTest):
 
     def test_iterkeys(self):
@@ -349,6 +457,7 @@ all_tests = (
              "TDBTestPut",
              "TDBTestTransaction",
              "TDBTestMisc",
+             "TDBTestQuery",
              "TDBTestNullBytes",
             )
 

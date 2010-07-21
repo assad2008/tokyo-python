@@ -4,13 +4,12 @@
 Todo
 ====
 
+- refactor iterators
 - tokyo.dystopia module
 - Indexed Database (IDB)
 - Q-gram Database (QDB)
 - Tagged Database (JDB)
 - Word Database (WDB)
-- TDBQuery/RTDBQuery tests
-- tokyo.dbm tests
 - more/better tests
 - Determine if it's worth releasing the GIL around some of tokyo cabinet's api
   call (conversation with Devin Wang)
@@ -32,6 +31,8 @@ Release 0.6.1
 - allow null bytes in keys and values - `Issue 3 <http://code.google.com/p/tokyo-python/issues/detail?id=3>`_ fixed
 - added libraries version checking in setup.py
 - fixed BDB.range() documentation
+- added basic TDBQuery/RTDBQuery tests
+- added basic tokyo.dbm tests
 
 
 Release 0.6.0

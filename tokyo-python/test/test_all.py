@@ -1,10 +1,11 @@
 import unittest
 
 import test_cabinet
+import test_dbm
 
 
-all_tests = [test_cabinet]
-opts_tests = ("test_tyrant",)
+all_tests = [test_cabinet, test_dbm]
+opts_tests = ("test_tyrant", "test_dystopia")
 
 for name in opts_tests:
     try:

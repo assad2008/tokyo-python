@@ -8,7 +8,8 @@ import subprocess
 import time
 
 from tokyo.tyrant import RTDB, Error
-from tokyo.cabinet import TDB, TDBOREADER, INT_MAX, INT_MIN
+from tokyo.cabinet import (TDB, TDBOREADER, INT_MAX, INT_MIN, TDBQCSTRBW,
+                           TDBQCNUMGE, TDBQOSTRASC, TDBQONUMDESC, TDBQPPUT)
 
 
 FILENAME = "tmp_tt_test.{0}"
@@ -33,7 +34,6 @@ class RTDBTestSuite(testsuite.TestSuite):
         subprocess.check_call(STOP_CMD, shell=True)
         time.sleep(0.1)
         os.remove(DBFILE)
-        os.remove(PIDFILE)
 
 
 class RTDBTest(unittest.TestCase):
@@ -230,6 +230,90 @@ class RTDBTestMisc(RTDBTest):
         self.assertEqual(self.db.searchkeys(b"a"), frozenset((b"akey",)))
 
 
+class RTDBTestQuery(RTDBTest):
+
+    def test_search(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        self.assertEqual(q.count(), 4)
+        self.assertEqual(q.search(), (b"key1", b"key2", b"key3", b"akey"))
+
+    def test_filter_key(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        q.filter(b"", TDBQCSTRBW, b"ke")
+        self.assertEqual(q.count(), 3)
+        self.assertEqual(q.search(), (b"key1", b"key2", b"key3"))
+
+    def test_filter_column(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        q.filter(b"test", TDBQCNUMGE, b"2")
+        self.assertEqual(q.count(), 2)
+        self.assertEqual(q.search(), (b"key2", b"key3"))
+
+    def test_sort_key(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        q.sort(b"", TDBQOSTRASC)
+        self.assertEqual(q.count(), 4)
+        self.assertEqual(q.search(), (b"akey", b"key1", b"key2", b"key3"))
+
+    def test_sort_column(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        q.sort(b"test", TDBQONUMDESC)
+        self.assertEqual(q.count(), 4)
+        self.assertEqual(q.search(), (b"key3", b"key2", b"key1", b"akey"))
+
+    def test_limit(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        q.limit(2)
+        self.assertEqual(q.count(), 2)
+        self.assertEqual(q.search(), (b"key1", b"key2"))
+        q.limit(-1, 2)
+        self.assertEqual(q.count(), 2)
+        self.assertEqual(q.search(), (b"key3", b"akey"))
+        q.limit(-1)
+        self.assertEqual(q.count(), 4)
+        self.assertEqual(q.search(), (b"key1", b"key2", b"key3", b"akey"))
+        q.limit(1, 2)
+        self.assertEqual(q.count(), 1)
+        self.assertEqual(q.search(), (b"key3",))
+
+    def test_remove(self):
+        self.db[b"key1"] = {b"test": b"1"}
+        self.db[b"key2"] = {b"test": b"2"}
+        self.db[b"key3"] = {b"test": b"3"}
+        self.db[b"akey"] = {b"test": b"a"}
+        q = self.db.query()
+        q.filter(b"test", TDBQCNUMGE, b"2")
+        self.assertEqual(len(self.db), 4)
+        q.remove()
+        self.assertEqual(len(self.db), 2)
+        self.assertEqual({b"key1": {b"test": b"1"}, b"akey": {b"test": b"a"}},
+                         dict(self.db.iteritems()))
+
+
 class RTDBTestNullBytes(RTDBTest):
 
     def test_iterkeys(self):
@@ -319,6 +403,7 @@ all_tests = (
              "RTDBTestIter",
              "RTDBTestPut",
              "RTDBTestMisc",
+             "RTDBTestQuery",
              "RTDBTestNullBytes",
             )
 
