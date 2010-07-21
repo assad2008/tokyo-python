@@ -16,6 +16,7 @@ set_fdb_error(TCFDB *fdb, long long key)
 
 
 #define FDB_MAX_ID ((unsigned long long)INT64_MAX)
+
 long long
 uint64_to_int64(unsigned long long id)
 {

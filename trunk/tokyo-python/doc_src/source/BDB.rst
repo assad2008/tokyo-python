@@ -365,26 +365,26 @@ B+ Tree Database --- :class:`BDB`
 
     .. method:: range([begin=None[, end=None[, max=-1]]])
 
-        Return a frozenset of all the keys starting with *begin*, all the keys
-        starting with *end* and all the keys in between. If given, *max* is the
-        maximum number of keys to fetch, if omitted or specified as a negative
-        value no limit is applied. Example::
+        Return a frozenset of all the keys between *begin* and *end* (inclusive).
+        If given, *max* is the maximum number of keys to fetch, if omitted or
+        specified as a negative value no limit is applied. Example::
 
             >>> from tokyo.cabinet import *
             >>> bdb = BDB()
             >>> bdb.open("range.tcb", BDBOWRITER | BDBOCREAT)
-            >>> for key, value in [("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")]:
+            >>> for key, value in [("a", "a"), ("b", "b"), ("c", "c"),
+            ...                    ("d", "d"), ("dodo", "dodo")]:
             ...     bdb[key] = value
             ...
             >>> bdb.range()
-            frozenset(['a', 'c', 'b', 'd'])
+            frozenset(['a', 'c', 'b', 'dodo', 'd'])
             >>> bdb.range(end="c")
             frozenset(['a', 'c', 'b'])
             >>>
             >>> bdb.range("b", "d") # begin and end are inclusive
             frozenset(['c', 'b', 'd'])
             >>> bdb.range("b", "z")
-            frozenset(['c', 'b', 'd'])
+            frozenset(['c', 'b', 'dodo', 'd'])
             >>> bdb.range("z", "b") # end < begin doesn't work
             frozenset([])
             >>> bdb.range("a", "a") # end == begin works
@@ -392,7 +392,7 @@ B+ Tree Database --- :class:`BDB`
             >>> bdb.range("A", "Z") # it is case sensitive
             frozenset([])
             >>> bdb.range("A", "z") # uppercase < lowercase
-            frozenset(['a', 'c', 'b', 'd'])
+            frozenset(['a', 'c', 'b', 'dodo', 'd'])
             >>> bdb.range("z", "A")
             frozenset([])
             >>> bdb.close()
