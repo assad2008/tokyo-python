@@ -165,59 +165,75 @@ class MDBTestMisc(MDBTest):
 
 class MDBTestNullBytes(MDBTest):
 
+    def test_iterkeys(self):
+        self.db[b"a\0b"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual([b"a\0b", b"cd"], sorted(list(self.db.iterkeys())))
+
     def test_itervalues(self):
-        self.db[b"ab"] = b"ab"
+        self.db[b"a\0b"] = b"ab"
         self.db[b"cd"] = b"c\0d"
         self.assertEqual([b"ab", b"c\0d"], sorted(list(self.db.itervalues())))
 
     def test_iteritems(self):
-        self.db[b"ab"] = b"ab"
+        self.db[b"a\0b"] = b"ab"
         self.db[b"cd"] = b"c\0d"
-        self.assertEqual({b"ab": b"ab", b"cd": b"c\0d"},
+        self.assertEqual({b"a\0b": b"ab", b"cd": b"c\0d"},
                          dict(self.db.iteritems()))
 
+    def test_contains(self):
+        self.db[b"a\0b"] = b"ab"
+        self.assertTrue(self.db.__contains__(b"a\0b"))
+        self.assertTrue(b"a\0b" in self.db)
+
     def test_getitem(self):
-        self.assertRaises(TypeError, self.db.__getitem__, b"b\0c")
-        self.db[b"ab"] = b"ab"
+        self.db[b"a\0b"] = b"ab"
         self.db[b"cd"] = b"c\0d"
+        self.assertEqual(b"ab", self.db.__getitem__(b"a\0b"))
+        self.assertEqual(b"ab", self.db[b"a\0b"])
         self.assertEqual(b"c\0d", self.db.__getitem__(b"cd"))
         self.assertEqual(b"c\0d", self.db[b"cd"])
 
     def test_setitem(self):
-        self.assertRaises(TypeError, self.db.__setitem__, b"b\0c", b"bc")
-        self.db.__setitem__(b"ab", b"ab")
+        self.db.__setitem__(b"a\0b", b"ab")
         self.db.__setitem__(b"cd", b"c\0d")
+        self.assertEqual(b"ab", self.db[b"a\0b"])
         self.assertEqual(b"c\0d", self.db[b"cd"])
 
     def test_get(self):
-        self.assertRaises(TypeError, self.db.get, b"b\0c")
-        self.db[b"ab"] = b"ab"
+        self.db[b"a\0b"] = b"ab"
         self.db[b"cd"] = b"c\0d"
+        self.assertEqual(b"ab", self.db.get(b"a\0b"))
         self.assertEqual(b"c\0d", self.db.get(b"cd"))
 
     def test_remove(self):
-        self.assertRaises(TypeError, self.db.remove, b"b\0c")
+        self.db[b"a\0b"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual(len(self.db), 2)
+        self.db.remove(b"a\0b")
+        self.assertEqual(len(self.db), 1)
 
     def test_put(self):
-        self.assertRaises(TypeError, self.db.put, b"b\0c", b"bc")
-        self.db.put(b"ab", b"ab")
+        self.db.put(b"a\0b", b"ab")
         self.db.put(b"cd", b"c\0d")
+        self.assertEqual(b"ab", self.db[b"a\0b"])
         self.assertEqual(b"c\0d", self.db[b"cd"])
 
     def test_putkeep(self):
-        self.assertRaises(TypeError, self.db.putkeep, b"b\0c", b"bc")
-        self.db.putkeep(b"ab", b"ab")
+        self.db.putkeep(b"a\0b", b"ab")
         self.db.putkeep(b"cd", b"c\0d")
-        self.assertRaises(KeyError, self.db.putkeep, b"cd", b"g\0h")
+        self.assertRaises(KeyError, self.db.putkeep, b"a\0b", b"g\0h")
 
     def test_putcat(self):
-        self.assertRaises(TypeError, self.db.putcat, b"b\0c", b"bc")
-        self.db.putcat(b"ab", b"ab")
-        self.db.putcat(b"ab", b"c\0d")
-        self.assertEqual(self.db[b"ab"], b"abc\0d")
+        self.db.putcat(b"a\0b", b"ab")
+        self.db.putcat(b"a\0b", b"c\0d")
+        self.assertEqual(self.db[b"a\0b"], b"abc\0d")
 
     def test_searchkeys(self):
-        self.assertRaises(TypeError, self.db.searchkeys, b"b\0c")
+        self.db[b"a\0b"] = b"ab"
+        self.db[b"cd"] = b"c\0d"
+        self.assertEqual(self.db.searchkeys(b"a"), frozenset((b"a\0b",)))
+        self.assertEqual(self.db.searchkeys(b"a\0"), frozenset((b"a\0b",)))
 
 
 all_tests = (

@@ -117,7 +117,7 @@ check_py_ssize_t_len(Py_ssize_t len, PyObject *obj)
 
 /* convert a bytes object to a void ptr */
 int
-bytes_to_void(PyObject *pyvalue, void **value, int *value_len, bool iskey)
+bytes_to_void(PyObject *pyvalue, void **value, int *value_len)
 {
     char *tmp;
     Py_ssize_t tmp_len;
@@ -126,10 +126,6 @@ bytes_to_void(PyObject *pyvalue, void **value, int *value_len, bool iskey)
         return -1;
     }
     if (check_py_ssize_t_len(tmp_len, pyvalue)) {
-        return -1;
-    }
-    if (iskey && (tmp_len != (Py_ssize_t)strlen(tmp))) {
-        set_error(PyExc_TypeError, "keys must be without null bytes");
         return -1;
     }
     *value = (void *)tmp;
@@ -267,8 +263,8 @@ dict_to_tcmap(PyObject *pyitems)
         return NULL;
     }
     while (PyDict_Next(pyitems, &pos, &pykey, &pyvalue)) {
-        if (bytes_to_void(pykey, &key, &key_size, true) ||
-            bytes_to_void(pyvalue, &value, &value_size, false)) {
+        if (bytes_to_void(pykey, &key, &key_size) ||
+            bytes_to_void(pyvalue, &value, &value_size)) {
             tcmapdel(items);
             return NULL;
         }

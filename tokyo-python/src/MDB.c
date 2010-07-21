@@ -256,7 +256,7 @@ int MDB_Contains(MDB *self, PyObject *pykey)
     void *key, *value;
     int key_size, value_size;
 
-    if (bytes_to_void(pykey, &key, &key_size, true)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
     value = tcmdbget(self->mdb, key, key_size, &value_size);
@@ -297,7 +297,7 @@ MDB_GetItem(MDB *self, PyObject *pykey)
     int key_size, value_size;
     PyObject *pyvalue;
 
-    if (bytes_to_void(pykey, &key, &key_size, true)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return NULL;
     }
     value = tcmdbget(self->mdb, key, key_size, &value_size);
@@ -317,11 +317,11 @@ MDB_SetItem(MDB *self, PyObject *pykey, PyObject *pyvalue)
     void *key, *value;
     int key_size, value_size;
 
-    if (bytes_to_void(pykey, &key, &key_size, true)) {
+    if (bytes_to_void(pykey, &key, &key_size)) {
         return -1;
     }
     if (pyvalue) {
-        if (bytes_to_void(pyvalue, &value, &value_size, false)) {
+        if (bytes_to_void(pyvalue, &value, &value_size)) {
             return -1;
         }
         tcmdbput(self->mdb, key, key_size, value, value_size);
@@ -445,8 +445,8 @@ MDB_putkeep(MDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "OO:putkeep", &pykey, &pyvalue)) {
         return NULL;
     }
-    if (bytes_to_void(pykey, &key, &key_size, true) ||
-        bytes_to_void(pyvalue, &value, &value_size, false)) {
+    if (bytes_to_void(pykey, &key, &key_size) ||
+        bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
     if (!tcmdbputkeep(self->mdb, key, key_size, value, value_size)) {
@@ -474,8 +474,8 @@ MDB_putcat(MDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "OO:putcat", &pykey, &pyvalue)) {
         return NULL;
     }
-    if (bytes_to_void(pykey, &key, &key_size, true) ||
-        bytes_to_void(pyvalue, &value, &value_size, false)) {
+    if (bytes_to_void(pykey, &key, &key_size) ||
+        bytes_to_void(pyvalue, &value, &value_size)) {
         return NULL;
     }
     tcmdbputcat(self->mdb, key, key_size, value, value_size);
@@ -503,7 +503,7 @@ MDB_searchkeys(MDB *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O|i:searchkeys", &pyprefix, &max)) {
         return NULL;
     }
-    if (bytes_to_void(pyprefix, &prefix, &prefix_size, true)) {
+    if (bytes_to_void(pyprefix, &prefix, &prefix_size)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS

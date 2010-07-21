@@ -7,7 +7,7 @@ import shlex
 import subprocess
 import time
 
-from tokyo.tyrant import RTDB as _RTDB, Error
+from tokyo.tyrant import RTDB, Error
 from tokyo.cabinet import TDB, TDBOREADER, INT_MAX, INT_MIN
 
 
@@ -19,18 +19,6 @@ PIDFILE = os.path.join(TEMPDIR, FILENAME.format("pid"))
 DBFILE = os.path.join(TEMPDIR, FILENAME.format("tct"))
 START_CMD = "ttserver -host {0} -port {1} -dmn -pid {2} {3}".format(HOST, PORT, PIDFILE, DBFILE)
 STOP_CMD = "kill -TERM `cat {0}`".format(PIDFILE)
-
-
-class RTDB(_RTDB):
-
-    def keys(self):
-        return (key for key in self)
-
-    def values(self):
-        return (self[key] for key in self)
-
-    def items(self):
-        return ((key, self[key]) for key in self)
 
 
 class RTDBTestSuite(testsuite.TestSuite):
@@ -101,15 +89,15 @@ class RTDBTestDict(RTDBTest):
         self.db[b"a"] = {b"test": b"a"}
         self.db[b"b"] = {b"test": b"b"}
         self.assertEqual(len(self.db), 2)
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {b"a": {b"test": b"a"}, b"b": {b"test": b"b"}})
         self.db[b"c"] = {b"test": b"c"}
         self.db[b"a"] = {b"test": b"aa"}
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {b"a": {b"test": b"aa"}, b"b": {b"test": b"b"}, b"c": {b"test": b"c"}})
         del self.db[b"b"]
         self.assertEqual(len(self.db), 2)
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {b"a": {b"test": b"aa"}, b"c": {b"test": b"c"}})
 
     def test_clear(self):
@@ -118,7 +106,7 @@ class RTDBTestDict(RTDBTest):
         self.assertEqual(len(self.db), 2)
         self.db.clear()
         self.assertEqual(len(self.db), 0)
-        d = dict(self.db.items())
+        d = dict(self.db.iteritems())
         self.assertEqual(d, {})
 
 
@@ -244,60 +232,86 @@ class RTDBTestMisc(RTDBTest):
 
 class RTDBTestNullBytes(RTDBTest):
 
+    def test_iterkeys(self):
+        self.db[b"a\0b"] = {b"ab": b"a\0b"}
+        self.db[b"cd"] = {b"c\0d": b"cd"}
+        self.assertEqual([b"a\0b", b"cd"], sorted(list(self.db.iterkeys())))
+
     def test_itervalues(self):
-        self.db[b"ab"] = {b"test": b"ab"}
-        self.db[b"cd"] = {b"test": b"c\0d"}
-        self.assertEqual([{b"test": b"ab"}, {b"test": b"c\0d"}],
+        self.db[b"a\0b"] = {b"ab": b"a\0b"}
+        self.db[b"cd"] = {b"c\0d": b"cd"}
+        self.assertEqual([{b"ab": b"a\0b"}, {b"c\0d": b"cd"}],
                          list(self.db.itervalues()))
 
     def test_iteritems(self):
-        self.db[b"ab"] = {b"test": b"ab"}
-        self.db[b"cd"] = {b"test": b"c\0d"}
-        self.assertEqual({b"ab": {b"test": b"ab"}, b"cd": {b"test": b"c\0d"}},
+        self.db[b"a\0b"] = {b"ab": b"a\0b"}
+        self.db[b"cd"] = {b"c\0d": b"cd"}
+        self.assertEqual({b"a\0b": {b"ab": b"a\0b"}, b"cd": {b"c\0d": b"cd"}},
                          dict(self.db.iteritems()))
 
+    def test_itervalueskeys(self):
+        self.db[b"a\0b"] = {b"ab": b"a\0b"}
+        self.db[b"cd"] = {b"c\0d": b"cd"}
+        self.assertEqual([(b"ab",), (b"c\0d",)], list(self.db.itervalueskeys()))
+
+    def test_itervaluesvals(self):
+        self.db[b"a\0b"] = {b"ab": b"a\0b"}
+        self.db[b"cd"] = {b"c\0d": b"cd"}
+        self.assertEqual([(b"a\0b",), (b"cd",)], list(self.db.itervaluesvals()))
+
+    def test_contains(self):
+        self.db[b"a\0b"] = {b"ab": b"a\0b"}
+        self.assertTrue(self.db.__contains__(b"a\0b"))
+        self.assertTrue(b"a\0b" in self.db)
+
     def test_getitem(self):
-        self.assertRaises(TypeError, self.db.__getitem__, b"b\0c")
-        self.db[b"ab"] = {b"test": b"ab"}
-        self.db[b"cd"] = {b"test": b"c\0d"}
-        self.assertEqual({b"test": b"c\0d"}, self.db.__getitem__(b"cd"))
-        self.assertEqual({b"test": b"c\0d"}, self.db[b"cd"])
+        self.db[b"a\0b"] = {b"ab": b"a\0b"}
+        self.db[b"cd"] = {b"c\0d": b"cd"}
+        self.assertEqual({b"ab": b"a\0b"}, self.db.__getitem__(b"a\0b"))
+        self.assertEqual({b"ab": b"a\0b"}, self.db[b"a\0b"])
+        self.assertEqual({b"c\0d": b"cd"}, self.db.__getitem__(b"cd"))
+        self.assertEqual({b"c\0d": b"cd"}, self.db[b"cd"])
 
     def test_setitem(self):
-        self.assertRaises(TypeError, self.db.__setitem__, b"b\0c", b"bc")
-        self.db.__setitem__(b"ab", {b"test": b"ab"})
-        self.db.__setitem__(b"cd", {b"test": b"c\0d"})
-        self.assertEqual({b"test": b"c\0d"}, self.db[b"cd"])
+        self.db.__setitem__(b"a\0b", {b"ab": b"a\0b"})
+        self.db.__setitem__(b"cd", {b"c\0d": b"cd"})
+        self.assertEqual({b"ab": b"a\0b"}, self.db[b"a\0b"])
+        self.assertEqual({b"c\0d": b"cd"}, self.db[b"cd"])
 
     def test_get(self):
-        self.assertRaises(TypeError, self.db.get, b"b\0c")
-        self.db[b"ab"] = {b"test": b"ab"}
-        self.db[b"cd"] = {b"test": b"c\0d"}
-        self.assertEqual({b"test": b"c\0d"}, self.db.get(b"cd"))
+        self.db[b"a\0b"] = {b"ab": b"a\0b"}
+        self.db[b"cd"] = {b"c\0d": b"cd"}
+        self.assertEqual({b"ab": b"a\0b"}, self.db.get(b"a\0b"))
+        self.assertEqual({b"c\0d": b"cd"}, self.db.get(b"cd"))
 
     def test_remove(self):
-        self.assertRaises(TypeError, self.db.remove, b"b\0c")
+        self.db[b"a\0b"] = {b"ab": b"a\0b"}
+        self.db[b"cd"] = {b"c\0d": b"cd"}
+        self.assertEqual(len(self.db), 2)
+        self.db.remove(b"a\0b")
+        self.assertEqual(len(self.db), 1)
 
     def test_put(self):
-        self.assertRaises(TypeError, self.db.put, b"b\0c", b"bc")
-        self.db.put(b"ab", {b"test": b"ab"})
-        self.db.put(b"cd", {b"test": b"c\0d"})
-        self.assertEqual({b"test": b"c\0d"}, self.db[b"cd"])
+        self.db.put(b"a\0b", {b"ab": b"a\0b"})
+        self.db.put(b"cd", {b"c\0d": b"cd"})
+        self.assertEqual({b"ab": b"a\0b"}, self.db[b"a\0b"])
+        self.assertEqual({b"c\0d": b"cd"}, self.db[b"cd"])
 
     def test_putkeep(self):
-        self.assertRaises(TypeError, self.db.putkeep, b"b\0c", b"bc")
-        self.db.putkeep(b"ab", {b"test": b"ab"})
-        self.db.putkeep(b"cd", {b"test": b"c\0d"})
-        self.assertRaises(KeyError, self.db.putkeep, b"cd", {b"test": b"g\0h"})
+        self.db.putkeep(b"a\0b", {b"ab": b"a\0b"})
+        self.db.putkeep(b"cd", {b"c\0d": b"cd"})
+        self.assertRaises(KeyError, self.db.putkeep, b"a\0b", {b"e\0f": b"e\0f"})
 
     def test_putcat(self):
-        self.assertRaises(TypeError, self.db.putcat, b"b\0c", b"bc")
-        self.db.putcat(b"ab", {b"test1": b"ab"})
-        self.db.putcat(b"ab", {b"test2": b"c\0d"})
-        self.assertEqual(self.db[b"ab"], {b"test1": b"ab", b"test2": b"c\0d"})
+        self.db.putcat(b"a\0b", {b"ab": b"a\0b"})
+        self.db.putcat(b"a\0b", {b"c\0d": b"cd", b"ab": b"e\0f"})
+        self.assertEqual(self.db[b"a\0b"], {b"ab": b"a\0b", b"c\0d": b"cd"})
 
     def test_searchkeys(self):
-        self.assertRaises(TypeError, self.db.searchkeys, b"b\0c")
+        self.db[b"a\0b"] = {b"ab": b"a\0b"}
+        self.db[b"cd"] = {b"c\0d": b"cd"}
+        self.assertEqual(self.db.searchkeys(b"a"), frozenset((b"a\0b",)))
+        self.assertEqual(self.db.searchkeys(b"a\0"), frozenset((b"a\0b",)))
 
 
 all_tests = (
