@@ -33,7 +33,6 @@ class RDBTestSuite(testsuite.TestSuite):
         subprocess.check_call(STOP_CMD, shell=True)
         time.sleep(0.1)
         os.remove(DBFILE)
-        os.remove(PIDFILE)
 
 
 class RDBTest(unittest.TestCase):
