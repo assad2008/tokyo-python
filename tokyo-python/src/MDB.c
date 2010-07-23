@@ -250,8 +250,8 @@ MDB_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 
 
 /* MDB_tp_as_sequence.sq_contains */
-static
-int MDB_Contains(MDB *self, PyObject *pykey)
+static int
+MDB_Contains(MDB *self, PyObject *pykey)
 {
     void *key, *value;
     int key_size, value_size;

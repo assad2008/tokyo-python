@@ -752,8 +752,8 @@ TDB_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 
 
 /* TDB_tp_as_sequence.sq_contains */
-static
-int TDB_Contains(TDB *self, PyObject *pykey)
+static int
+TDB_Contains(TDB *self, PyObject *pykey)
 {
     void *key;
     int key_size;

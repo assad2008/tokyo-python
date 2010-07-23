@@ -543,8 +543,8 @@ http://1978th.net/tokyotyrant/spex.html#tcrdbapi_apitbl");
 
 
 /* RTDB_tp_as_sequence.sq_contains */
-static
-int RTDB_Contains(RTDB *self, PyObject *pykey)
+static int
+RTDB_Contains(RTDB *self, PyObject *pykey)
 {
     void *key;
     int key_size;

@@ -237,8 +237,8 @@ NDB_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 
 
 /* NDB_tp_as_sequence.sq_contains */
-static
-int NDB_Contains(NDB *self, PyObject *pykey)
+static int
+NDB_Contains(NDB *self, PyObject *pykey)
 {
     void *key, *value;
     int key_size, value_size;

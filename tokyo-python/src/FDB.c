@@ -9,56 +9,9 @@ set_fdb_error(TCFDB *fdb, long long key)
 
     ecode = tcfdbecode(fdb);
     if (key && ((ecode == TCENOREC) || (ecode == TCEKEEP))) {
-        return PyErr_Format(PyExc_KeyError, "%ld", (long)key);
+        return PyErr_Format(PyExc_KeyError, "%lld", key);
     }
     return set_error(Error, tcfdberrmsg(ecode));
-}
-
-
-#define FDB_MAX_ID ((unsigned long long)INT64_MAX)
-
-long long
-uint64_to_int64(unsigned long long id)
-{
-    if (id > FDB_MAX_ID) {
-        set_error(PyExc_OverflowError, "id is greater than maximum");
-        return -1;
-    }
-    return (long long)id;
-}
-
-
-/* convert an array of ids to a fozenset */
-PyObject *
-ids_to_frozenset(uint64_t *result, int result_size)
-{
-    int i;
-    long long id;
-    PyObject *pyresult, *pyid;
-
-    pyresult = PyFrozenSet_New(NULL);
-    if (!pyresult) {
-        return NULL;
-    }
-    for(i = 0; i < result_size; i++){
-        id = uint64_to_int64(result[i]);
-        if (id == -1) {
-            Py_DECREF(pyresult);
-            return NULL;
-        }
-        pyid = PyLong_FromLongLong(id);
-        if (!pyid) {
-            Py_DECREF(pyresult);
-            return NULL;
-        }
-        if (PySet_Add(pyresult, pyid)) {
-            Py_DECREF(pyid);
-            Py_DECREF(pyresult);
-            return NULL;
-        }
-        Py_DECREF(pyid);
-    }
-    return pyresult;
 }
 
 
@@ -325,8 +278,8 @@ FDB_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 
 
 /* FDB_tp_as_sequence.sq_contains */
-static
-int FDB_Contains(FDB *self, PyObject *pykey)
+static int
+FDB_Contains(FDB *self, PyObject *pykey)
 {
     long long key;
     int value_size;

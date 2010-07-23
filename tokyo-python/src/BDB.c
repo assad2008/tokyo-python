@@ -715,8 +715,8 @@ BDB_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 
 
 /* BDB_tp_as_sequence.sq_contains */
-static
-int BDB_Contains(BDB *self, PyObject *pykey)
+static int
+BDB_Contains(BDB *self, PyObject *pykey)
 {
     void *key, *value;
     int key_size, value_size;
