@@ -18,6 +18,12 @@ Todo
 - Ordered Tree (Tree)?
 
 
+Release 0.6.2
+=============
+
+- fixed setup.py (did not install c extensions)
+
+
 Release 0.6.1
 =============
 

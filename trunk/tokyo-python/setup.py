@@ -85,7 +85,7 @@ class build_ext(_build_ext):
 
 setup(
       name="tokyo-python",
-      version="0.6.1",
+      version="0.6.2",
       url="http://packages.python.org/tokyo-python/",
       download_url="http://pypi.python.org/pypi/tokyo-python/",
       description="Tokyo libraries Python interface.",
@@ -96,6 +96,7 @@ setup(
       license="GNU General Public License (GPL)",
       packages = ["tokyo"],
       cmdclass={"build_ext": build_ext},
+      ext_modules=[cabinet_ext.c_ext],
       classifiers=[
                    "Development Status :: 4 - Beta",
                    "Intended Audience :: Developers",
