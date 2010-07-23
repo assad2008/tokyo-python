@@ -1,0 +1,114 @@
+.. title:: Changes
+
+
+Todo
+====
+
+- refactor iterators
+- tokyo.dystopia module
+- Indexed Database (IDB)
+- Q-gram Database (QDB)
+- Tagged Database (JDB)
+- Word Database (WDB)
+- more/better tests
+- Determine if it's worth releasing the GIL around some of tokyo cabinet's api
+  call (conversation with Devin Wang)
+- Array List (List)?
+- Hash Map (Map)?
+- Ordered Tree (Tree)?
+
+
+Release 0.6.2
+=============
+
+- fixed setup.py (did not install c extensions)
+
+
+Release 0.6.1
+=============
+
+- changed attribute RTDBQuery.count to method RTDBQuery.count()
+- added method TDBQuery.count() - `Issue 2 <http://code.google.com/p/tokyo-python/issues/detail?id=2>`_ fixed
+- added iter[keys/values/items] methods to HDB, MDB, BDB, NDB, FDB and TDB
+- added itervalues[keys/vals] methods to TDB
+- fixed a bug in all addint/adddouble methods (always marked the db as changed) - I'll get it right eventually :-)
+- added iter[keys/values/items] methods to RDB and RTDB
+- added itervalues[keys/vals] methods to RTDB
+- allow null bytes in keys and values - `Issue 3 <http://code.google.com/p/tokyo-python/issues/detail?id=3>`_ fixed
+- added libraries version checking in setup.py
+- fixed BDB.range() documentation
+- added basic TDBQuery/RTDBQuery tests
+- added basic tokyo.dbm tests
+
+
+Release 0.6.0
+=============
+
+- reorganized the package to accommodate the new tokyo.tyrant module:
+
+  - main package is called tokyo
+  - replaced tokyocabinet with tokyo.cabinet
+  - replaced tcdbm with tokyo.dbm
+
+- added tokyo.tyrant module
+- added Remote Database (RDB)
+- updated tests to work with Python 2 and 3 (mainly string/bytes conversions)
+- fixed a bug in tcmap_to_dict
+- fixed a bug in all addint/adddouble methods (did not mark the db as changed)
+- added method setcmpfunc to BDB
+- removed OSError (which should have been IOError anyway) from all open() and
+  copy() methods, due to BDB.setcmpfunc()
+- added Remote Table Database (RTDB)
+- changed method TDBQuery.hint() to attribute TDBQuery.hint
+
+
+Release 0.5.0
+=============
+
+- reorganized the sources a bit (-> smaller binary?)
+- added method addint to HDB, BDB and FDB
+- added constants INT_MAX, INT_MIN
+- added method adddouble to HDB, BDB and FDB
+- added module tcdbm (with help from Aigars Mahinovs)
+
+
+Release 0.4.0
+=============
+
+- added Table Database (TDB)
+- better guard (at least I think) against change during iteration
+
+
+Release 0.3.0
+=============
+
+- added Fixed-length Database (FDB)
+- all iterators raise an Error if size changed during iteration
+
+
+Release 0.2.1
+=============
+
+- added On-memory Tree Database (NDB)
+
+
+Release 0.2.0
+=============
+
+- added B+ Tree Database (BDB)
+- added methods get and remove to HDB and MDB
+
+
+Release 0.1.2
+=============
+
+- added On-memory Hash Database (MDB)
+
+
+Release 0.1.0
+=============
+
+First public release:
+
+- only Hash Database (HDB)
+- restricted to string/bytes
