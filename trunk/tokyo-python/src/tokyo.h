@@ -30,6 +30,7 @@
 
 
 #define TK_PY_MAX_DB_LEN ((unsigned long long)PY_SSIZE_T_MAX)
+#define TK_PY_MAX_ID ((unsigned long long)INT64_MAX)
 
 #if SIZEOF_SIZE_T > SIZEOF_INT
 #define TK_PY_SIZE_T_BIGGER_THAN_INT
@@ -308,6 +309,50 @@ DB_Length(unsigned long long len)
         return -1;
     }
     return (Py_ssize_t)len;
+}
+
+
+long long
+uint64_to_int64(unsigned long long id)
+{
+    if (id > TK_PY_MAX_ID) {
+        set_error(PyExc_OverflowError, "id is greater than maximum");
+        return -1;
+    }
+    return (long long)id;
+}
+
+/* convert an array of ids to a fozenset */
+PyObject *
+ids_to_frozenset(uint64_t *result, int result_size)
+{
+    int i;
+    long long id;
+    PyObject *pyresult, *pyid;
+
+    pyresult = PyFrozenSet_New(NULL);
+    if (!pyresult) {
+        return NULL;
+    }
+    for(i = 0; i < result_size; i++){
+        id = uint64_to_int64(result[i]);
+        if (id == -1) {
+            Py_DECREF(pyresult);
+            return NULL;
+        }
+        pyid = PyLong_FromLongLong(id);
+        if (!pyid) {
+            Py_DECREF(pyresult);
+            return NULL;
+        }
+        if (PySet_Add(pyresult, pyid)) {
+            Py_DECREF(pyid);
+            Py_DECREF(pyresult);
+            return NULL;
+        }
+        Py_DECREF(pyid);
+    }
+    return pyresult;
 }
 
 
