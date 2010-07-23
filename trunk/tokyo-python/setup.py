@@ -75,17 +75,24 @@ tyrant_ext = TokyoPythonExt(False, "tokyotyrant", "Tokyo Tyrant", "1.1.40",
                                        "resolv", "nsl", "dl", "rt", "pthread",
                                        "m", "c"])
 
+dystopia_ext = TokyoPythonExt(False, "tokyodystopia", "Tokyo Dystopia", "0.9.14",
+                              "tdversion", "http://1978th.net/tokyodystopia/",
+                              "tokyo.dystopia", ["src/dystopia.c"],
+                              libraries=["tokyodystopia", "tokyocabinet", "z",
+                                         "bz2", "pthread", "m", "c"])
+
 class build_ext(_build_ext):
     def finalize_options(self):
         _build_ext.finalize_options(self)
         if "sdist" not in argv:
-            self.extensions = [ext.c_ext for ext in (cabinet_ext, tyrant_ext)
+            self.extensions = [ext.c_ext for ext in (cabinet_ext, tyrant_ext,
+                                                     dystopia_ext)
                                if check_extension(ext)]
 
 
 setup(
       name="tokyo-python",
-      version="0.6.3",
+      version="0.7.0",
       url="http://packages.python.org/tokyo-python/",
       download_url="http://pypi.python.org/pypi/tokyo-python/",
       description="Tokyo libraries Python interface.",
