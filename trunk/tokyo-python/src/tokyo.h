@@ -316,7 +316,7 @@ long long
 uint64_to_int64(unsigned long long id)
 {
     if (id > TK_PY_MAX_ID) {
-        set_error(PyExc_OverflowError, "id is greater than maximum");
+        set_error(PyExc_OverflowError, "key is greater than maximum");
         return -1;
     }
     return (long long)id;

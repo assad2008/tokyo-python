@@ -24,8 +24,13 @@ Indexed Database --- :class:`IDB`
         idb.close()
 
     .. note::
-        For all methods taking either a *key* argument or a pair *(key, value)*,
-        *key* and *value* must :class:`str`.
+        For all methods taking either a *key* argument or a pair *(key, value)*:
+
+        * Python2: *key* must be :class:`long`/:class:`int` and *value* must be
+          :class:`str`.
+        * Python3: *key* must be :class:`int` and *value* must be :class:`str`.
+
+        On top of that *key* **must always be >= 0**.
 
     .. seealso::
         `Tokyo Dystopia Core API
