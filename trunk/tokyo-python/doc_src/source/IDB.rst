@@ -73,7 +73,7 @@ Indexed Database --- :class:`IDB`
 
         Open a database.
 
-        :param path: path to the database file.
+        :param path: path to the database directory.
         :param mode: mode, see :ref:`idb_open_modes`.
 
 
