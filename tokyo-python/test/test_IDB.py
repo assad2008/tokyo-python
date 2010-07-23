@@ -57,6 +57,7 @@ class IDBTestDict(IDBTest):
         self.assertRaises(TypeError, self.db.__setitem__, 1)
         self.assertRaises(TypeError, self.db.__setitem__, "a", 1)
         self.assertRaises(TypeError, self.db.__setitem__, 1, 1)
+        self.assertRaises(OverflowError, self.db.__setitem__, -1, "a")
         self.db[1] = "a"
         self.db[2] = "b"
         self.assertEqual(len(self.db), 2)

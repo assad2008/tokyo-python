@@ -3,13 +3,13 @@
 *******************************************************************************/
 
 PyObject *
-set_idb_error(TCIDB *idb, long long id)
+set_idb_error(TCIDB *idb, long long key)
 {
     int ecode;
 
     ecode = tcidbecode(idb);
-    if (id && ((ecode == TCENOREC) || (ecode == TCEKEEP))) {
-        return PyErr_Format(PyExc_KeyError, "%lld", id);
+    if (key && ((ecode == TCENOREC) || (ecode == TCEKEEP))) {
+        return PyErr_Format(PyExc_KeyError, "%ld", (long)key);
     }
     return set_error(Error, tcidberrmsg(ecode));
 }
@@ -62,16 +62,16 @@ IDB_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 
 /* IDB_tp_as_sequence.sq_contains */
 static int
-IDB_Contains(IDB *self, PyObject *pyid)
+IDB_Contains(IDB *self, PyObject *pykey)
 {
-    long long id;
+    long long key;
     char *value;
 
-    id = PyLong_AsLongLong(pyid);
-    if (id == -1 && PyErr_Occurred()) {
+    key = pylong_to_int64(pykey);
+    if (key < 0) {
         return -1;
     }
-    value = tcidbget(self->idb, id);
+    value = tcidbget(self->idb, key);
     if (!value) {
         if (tcidbecode(self->idb) == TCENOREC) {
             return 0;
@@ -107,19 +107,19 @@ IDB_Length(IDB *self)
 
 /* IDB_tp_as_mapping.mp_subscript */
 static PyObject *
-IDB_GetItem(IDB *self, PyObject *pyid)
+IDB_GetItem(IDB *self, PyObject *pykey)
 {
-    long long id;
+    long long key;
     char *value;
     PyObject *pyvalue;
 
-    id = PyLong_AsLongLong(pyid);
-    if (id == -1 && PyErr_Occurred()) {
+    key = pylong_to_int64(pykey);
+    if (key < 0) {
         return NULL;
     }
-    value = tcidbget(self->idb, id);
+    value = tcidbget(self->idb, key);
     if (!value) {
-        return set_idb_error(self->idb, id);
+        return set_idb_error(self->idb, key);
     }
     pyvalue = PyString_FromString(value);
     tcfree(value);
@@ -129,13 +129,13 @@ IDB_GetItem(IDB *self, PyObject *pyid)
 
 /* IDB_tp_as_mapping.mp_ass_subscript */
 static int
-IDB_SetItem(IDB *self, PyObject *pyid, PyObject *pyvalue)
+IDB_SetItem(IDB *self, PyObject *pykey, PyObject *pyvalue)
 {
-    long long id;
+    long long key;
     char *value;
 
-    id = PyLong_AsLongLong(pyid);
-    if (id == -1 && PyErr_Occurred()) {
+    key = pylong_to_int64(pykey);
+    if (key < 0) {
         return -1;
     }
     if (pyvalue) {
@@ -143,14 +143,14 @@ IDB_SetItem(IDB *self, PyObject *pyid, PyObject *pyvalue)
         if (!value) {
             return -1;
         }
-        if (!tcidbput(self->idb, id, value)) {
+        if (!tcidbput(self->idb, key, value)) {
             set_idb_error(self->idb, 0);
             return -1;
         }
     }
     else {
-        if (!tcidbout(self->idb, id)) {
-            set_idb_error(self->idb, id);
+        if (!tcidbout(self->idb, key)) {
+            set_idb_error(self->idb, key);
             return -1;
         }
     }

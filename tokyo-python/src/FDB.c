@@ -9,7 +9,7 @@ set_fdb_error(TCFDB *fdb, long long key)
 
     ecode = tcfdbecode(fdb);
     if (key && ((ecode == TCENOREC) || (ecode == TCEKEEP))) {
-        return PyErr_Format(PyExc_KeyError, "%lld", key);
+        return PyErr_Format(PyExc_KeyError, "%ld", (long)key);
     }
     return set_error(Error, tcfdberrmsg(ecode));
 }
