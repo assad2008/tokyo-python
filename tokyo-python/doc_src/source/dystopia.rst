@@ -31,4 +31,18 @@ is the following.
     <http://1978th.net/tokyodystopia/spex.html>`_ for more information about
     Tokyo Dystopia.
 
-**TODO**
+
+.. exception:: Error
+
+    Raised when an error specific to Tokyo Dystopia happens.
+
+
+.. function:: version
+
+    Returns the version string of the underlying Tokyo Dystopia library.
+
+
+.. toctree::
+    :maxdepth: 1
+
+    IDB
