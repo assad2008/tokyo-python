@@ -46,7 +46,7 @@ pylong_to_int64(PyObject *pyid)
     long long id;
 
     id = PyLong_AsLongLong(pyid);
-    if (id < 0 && !PyErr_Occurred()) {
+    if (id < 1 && !PyErr_Occurred()) {
         set_error(PyExc_OverflowError, "key is lesser than minimum");
     }
     return id;
@@ -116,7 +116,10 @@ init_dystopia(void)
 
     /* checking types */
     if (
-        PyType_Ready(&IDBType)
+        PyType_Ready(&IDBType) ||
+        PyType_Ready(&IDBIterKeysType) ||
+        PyType_Ready(&IDBIterValuesType) ||
+        PyType_Ready(&IDBIterItemsType)
        ) {
         return NULL;
     }

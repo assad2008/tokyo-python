@@ -4,7 +4,7 @@ import os
 import tempfile
 
 from tokyo.cabinet import (FDBOREADER, FDBOWRITER, FDBOCREAT, FDB, Error,
-                           INT_MAX, INT_MIN)
+                           FDBIDMIN, FDBIDMAX, INT_MAX, INT_MIN)
 
 
 class FDBTest(unittest.TestCase):
@@ -227,6 +227,8 @@ class FDBTestMisc(FDBTest):
         for x in range(1, 5):
             self.db[x] = str(x).encode()
         self.assertEqual(self.db.range(), frozenset((1, 2, 3, 4)))
+        self.assertEqual(self.db.range(FDBIDMIN, FDBIDMAX),
+                         frozenset((1, 2, 3, 4)))
         self.assertEqual(self.db.range(2, 10), frozenset((2, 3, 4)))
         self.assertEqual(self.db.range(10, 2), frozenset())
         self.assertEqual(self.db.range(1, 1), frozenset((1,)))

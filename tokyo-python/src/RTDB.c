@@ -291,7 +291,7 @@ RTDBIterValues_tp_iternext(DBIter *self)
 /* RTDBIterValuesType */
 static PyTypeObject RTDBIterValuesType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "tokyo.cabinet.RTDBIterValues",            /*tp_name*/
+    "tokyo.tyrant.RTDBIterValues",            /*tp_name*/
     sizeof(DBIter),                           /*tp_basicsize*/
     0,                                        /*tp_itemsize*/
     (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
@@ -316,7 +316,7 @@ static PyTypeObject RTDBIterValuesType = {
     0,                                        /*tp_richcompare*/
     0,                                        /*tp_weaklistoffset*/
     PyObject_SelfIter,                        /*tp_iter*/
-    (iternextfunc)RTDBIterValues_tp_iternext,  /*tp_iternext*/
+    (iternextfunc)RTDBIterValues_tp_iternext, /*tp_iternext*/
     DBIter_tp_methods,                        /*tp_methods*/
 };
 
@@ -362,7 +362,7 @@ RTDBIterItems_tp_iternext(DBIter *self)
 /* RTDBIterItemsType */
 static PyTypeObject RTDBIterItemsType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "tokyo.cabinet.RTDBIterItems",             /*tp_name*/
+    "tokyo.tyrant.RTDBIterItems",             /*tp_name*/
     sizeof(DBIter),                           /*tp_basicsize*/
     0,                                        /*tp_itemsize*/
     (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
@@ -387,7 +387,7 @@ static PyTypeObject RTDBIterItemsType = {
     0,                                        /*tp_richcompare*/
     0,                                        /*tp_weaklistoffset*/
     PyObject_SelfIter,                        /*tp_iter*/
-    (iternextfunc)RTDBIterItems_tp_iternext,   /*tp_iternext*/
+    (iternextfunc)RTDBIterItems_tp_iternext,  /*tp_iternext*/
     DBIter_tp_methods,                        /*tp_methods*/
 };
 
@@ -430,7 +430,7 @@ RTDBIterValuesKeys_tp_iternext(DBIter *self)
 /* RTDBIterValuesKeysType */
 static PyTypeObject RTDBIterValuesKeysType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "tokyo.cabinet.RTDBIterValuesKeys",       /*tp_name*/
+    "tokyo.tyrant.RTDBIterValuesKeys",        /*tp_name*/
     sizeof(DBIter),                           /*tp_basicsize*/
     0,                                        /*tp_itemsize*/
     (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
@@ -497,7 +497,7 @@ RTDBIterValuesVals_tp_iternext(DBIter *self)
 /* RTDBIterValuesValsType */
 static PyTypeObject RTDBIterValuesValsType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "tokyo.cabinet.RTDBIterValuesVals",       /*tp_name*/
+    "tokyo.tyrant.RTDBIterValuesVals",        /*tp_name*/
     sizeof(DBIter),                           /*tp_basicsize*/
     0,                                        /*tp_itemsize*/
     (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/

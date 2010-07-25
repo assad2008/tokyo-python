@@ -4,11 +4,12 @@
 Todo
 ====
 
-- refactor iterators
 - Q-gram Database (QDB)
 - Tagged Database (JDB)
 - Word Database (WDB)
 - more/better tests
+- refactor iterators
+- see if we can turn queries into iterators - `Issue 1 <http://code.google.com/p/tokyo-python/issues/detail?id=1>`_
 - Determine if it's worth releasing the GIL around some of tokyo cabinet's api
   call (conversation with Devin Wang)
 - Array List (List)?

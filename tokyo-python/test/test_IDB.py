@@ -57,7 +57,7 @@ class IDBTestDict(IDBTest):
         self.assertRaises(TypeError, self.db.__setitem__, 1)
         self.assertRaises(TypeError, self.db.__setitem__, "a", 1)
         self.assertRaises(TypeError, self.db.__setitem__, 1, 1)
-        self.assertRaises(OverflowError, self.db.__setitem__, -1, "a")
+        self.assertRaises(OverflowError, self.db.__setitem__, 0, "a")
         self.db[1] = "a"
         self.db[2] = "b"
         self.assertEqual(len(self.db), 2)
@@ -72,18 +72,68 @@ class IDBTestDict(IDBTest):
         d = dict(self.db.iteritems())
         self.assertEqual(d, {1: "d", 3: "c"})
 
-    #def test_clear(self):
-    #    self.db[1] = "a"
-    #    self.db[2] = "b"
-    #    self.assertEqual(len(self.db), 2)
-    #    self.db.clear()
-    #    self.assertEqual(len(self.db), 0)
-    #    d = dict(self.db.iteritems())
-    #    self.assertEqual(d, {})
+    def test_clear(self):
+        self.db[1] = "a"
+        self.db[2] = "b"
+        self.assertEqual(len(self.db), 2)
+        self.db.clear()
+        self.assertEqual(len(self.db), 0)
+        d = dict(self.db.iteritems())
+        self.assertEqual(d, {})
+
+
+class IDBTestIter(IDBTest):
+
+    def test_iter(self):
+        self.db[1] = "a"
+        self.db[2] = "b"
+        self.db[3] = "c"
+        i = iter(self.db)
+        self.assertTrue(1 in i)
+        i = iter(self.db)
+        self.assertEqual([1, 2, 3], sorted(i))
+        i = iter(self.db)
+        a = next(i)
+        b = next(i)
+        c = next(i)
+        self.assertRaises(StopIteration, next, i)
+        self.assertEqual([1, 2, 3], sorted((a, b, c)))
+        i = iter(self.db)
+        a = next(i)
+        del self.db[2]
+        self.assertRaises(Error, next, i)
+        i = iter(self.db)
+        a = next(i)
+        self.db[4] = "d"
+        self.assertRaises(Error, next, i)
+        i = iter(self.db)
+        a = next(i)
+        del self.db[4]
+        self.db[4] = "e"
+        self.assertRaises(Error, next, i)
+
+    def test_iterkeys(self):
+        self.db[1] = "a"
+        self.db[2] = "b"
+        self.db[3] = "c"
+        self.assertEqual([1, 2, 3], sorted(list(self.db.iterkeys())))
+
+    def test_itervalues(self):
+        self.db[1] = "a"
+        self.db[2] = "b"
+        self.db[3] = "c"
+        self.assertEqual(["a", "b", "c"], sorted(list(self.db.itervalues())))
+
+    def test_iteritems(self):
+        self.db[1] = "a"
+        self.db[2] = "b"
+        self.db[3] = "c"
+        self.assertEqual({1: "a", 2: "b", 3: "c"}, dict(self.db.iteritems()))
 
 
 all_tests = (
              "IDBTestDict",
+             "IDBTestIter",
             )
 
 suite = unittest.TestLoader().loadTestsFromNames(all_tests,

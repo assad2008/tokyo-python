@@ -20,6 +20,25 @@ Indexed Database --- :class:`IDB`
 
         idb = IDB()
 
+        # if need be, you should call tune/setcache/ before open,
+        # ex. with default values:
+        idb.tune(0, 0, 0, 0)
+        idb.setcache(0, 0)
+
+        # open the database
+        idb.open("casket.tdi", IDBOWRITER | IDBOCREAT)
+
+        # store records
+        for key, value in [(1, "hop"), (2, "step"), (3, "jump")]:
+            idb[key] = value
+
+        # retrieve one record
+        print(idb[1])
+
+        # traverse records
+        for key in idb:
+            print(key, idb[key])
+
         # close the database
         idb.close()
 
@@ -27,10 +46,11 @@ Indexed Database --- :class:`IDB`
         For all methods taking either a *key* argument or a pair *(key, value)*:
 
         * Python2: *key* must be :class:`long`/:class:`int` and *value* must be
-          :class:`str`.
-        * Python3: *key* must be :class:`int` and *value* must be :class:`str`.
+          :class:`str` or :class:`unicode`.
+        * Python3: *key* must be :class:`int` and *value* must be :class:`bytes`
+          or :class:`str`.
 
-        On top of that *key* **must always be >= 0**.
+        On top of that *key* **must always be > 0**.
 
     .. seealso::
         `Tokyo Dystopia Core API
@@ -74,6 +94,46 @@ Indexed Database --- :class:`IDB`
         Return an iterator over the keys of the database.
 
 
+    .. method:: tune(ernum, etnum, iusiz, opts)
+
+        Tune a database.
+
+        :param ernum: the expected number of records to be stored. If specified
+            as 0 or as a negative value, the default value (1000000) is used.
+        :param etnum: the expected number of tokens to be stored. If specified
+            as 0 or as a negative value, the default value (1000000) is used.
+        :param iusiz: the unit size of each index file(?). If specified as 0 or
+            as a negative value, the default value (536870912) is used.
+        :param opts: options, see :ref:`idb_tune_options`.
+
+        .. note::
+            Tuning an open database is an invalid operation.
+
+
+    .. method:: setcache(icsiz, lcnum)
+
+        Set the cache size.
+
+        :param icsiz: the size of the token cache. If specified as 0 or as a
+            negative value, the default value (134217728) is used.
+        :param lcnum: the maximum number of cached leaf nodes. If specified as 0
+            or as a negative value, the default value (64 for writer or 1024 for
+            reader) is used.
+
+        .. note::
+            Setting the cache size on an open database is an invalid operation.
+
+
+    .. method:: setfwmmax(fwmmax)
+
+        Set the maximum number of forward matching expansion(?).
+
+        :param fwmmax: the maximum number of forward matching expansion.
+
+        .. note::
+            Setting this on an open database is an invalid operation.
+
+
     .. method:: open(path, mode)
 
         Open a database.
@@ -99,7 +159,7 @@ Indexed Database --- :class:`IDB`
 
         Copy the database file.
 
-        :param path: path to the destination file.
+        :param path: path to the destination directory.
 
 
     .. method:: get(key)
@@ -137,14 +197,27 @@ Indexed Database --- :class:`IDB`
         Return an iterator over the database's items (``(key, value)`` pairs).
 
 
+    .. method:: search(expr[, mode])
+
+        TODO.
+
+
+    .. method:: optimize
+
+        Optimize a database.
+
+        .. note::
+            Optimizing a read only database is an invalid operation.
+
+
     .. attribute:: path
 
-        The path to the database file.
+        The path to the database directory.
 
 
     .. attribute:: size
 
-        The size in bytes of the database file.
+        The size in bytes of the database.
 
 
 .. _idb_open_modes:
@@ -185,10 +258,10 @@ The following constants can be combined with either :const:`IDBOREADER` or
       Locking is performed without blocking.
 
 
-.. _idb_tune_optimize_options:
+.. _idb_tune_options:
 
-:meth:`IDB.tune`/:meth:`IDB.optimize` options
-=============================================
+:meth:`IDB.tune` options
+========================
 
 .. data:: IDBTLARGE
 
