@@ -68,7 +68,6 @@ set_stopiteration_error(void)
 }
 
 
-#if PY_MAJOR_VERSION >= 3
 /* PyUnicode to char * */
 char *
 PyUnicode_AS_STRING(PyObject *unicode)
@@ -87,15 +86,19 @@ PyUnicode_AS_STRING(PyObject *unicode)
 }
 
 char *
-PyUnicode_AsString(PyObject *unicode)
+PyUnicode_AsString(PyObject *obj)
 {
-    if (!PyUnicode_Check(unicode)) {
-        PyErr_SetString(PyExc_TypeError, "a string is required");
-        return NULL;
+    if (PyUnicode_Check(obj)) {
+        return PyUnicode_AS_STRING(obj);
     }
-    return PyUnicode_AS_STRING(unicode);
+    if (PyBytes_Check(obj)) {
+        return PyBytes_AS_STRING(obj);
+    }
+    PyErr_SetString(PyExc_TypeError, "a bytes or unicode object is required");
+    return NULL;
 }
 
+#if PY_MAJOR_VERSION >= 3
 #define PyString_AsString PyUnicode_AsString
 #define PyString_FromString PyUnicode_FromString
 #define PyInt_FromLong PyLong_FromLong

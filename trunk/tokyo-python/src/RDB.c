@@ -36,7 +36,7 @@ RDBIterValues_tp_iternext(DBIter *self)
 /* RDBIterValuesType */
 static PyTypeObject RDBIterValuesType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "tokyo.cabinet.RDBIterValues",            /*tp_name*/
+    "tokyo.tyrant.RDBIterValues",             /*tp_name*/
     sizeof(DBIter),                           /*tp_basicsize*/
     0,                                        /*tp_itemsize*/
     (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
@@ -106,7 +106,7 @@ RDBIterItems_tp_iternext(DBIter *self)
 /* RDBIterItemsType */
 static PyTypeObject RDBIterItemsType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "tokyo.cabinet.RDBIterItems",             /*tp_name*/
+    "tokyo.tyrant.RDBIterItems",              /*tp_name*/
     sizeof(DBIter),                           /*tp_basicsize*/
     0,                                        /*tp_itemsize*/
     (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/

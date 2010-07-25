@@ -161,7 +161,7 @@ RDBBaseIterKeys_tp_iternext(DBIter *self)
 /* RDBBaseIterKeysType */
 static PyTypeObject RDBBaseIterKeysType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "tokyo.cabinet.RDBBaseIterKeys",          /*tp_name*/
+    "tokyo.tyrant.RDBBaseIterKeys",           /*tp_name*/
     sizeof(DBIter),                           /*tp_basicsize*/
     0,                                        /*tp_itemsize*/
     (destructor)DBIter_tp_dealloc,            /*tp_dealloc*/
