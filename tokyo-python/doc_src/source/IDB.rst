@@ -20,7 +20,7 @@ Indexed Database --- :class:`IDB`
 
         idb = IDB()
 
-        # if need be, you should call tune/setcache/ before open,
+        # if need be, you should call tune/setcache before open,
         # ex. with default values:
         idb.tune(0, 0, 0, 0)
         idb.setcache(0, 0)
@@ -49,6 +49,8 @@ Indexed Database --- :class:`IDB`
           :class:`str` or :class:`unicode`.
         * Python3: *key* must be :class:`int` and *value* must be :class:`bytes`
           or :class:`str`.
+
+        Values will always be returned as UTF-8 encoded unicode objects.
 
         On top of that *key* **must always be > 0**.
 
@@ -199,7 +201,22 @@ Indexed Database --- :class:`IDB`
 
     .. method:: search(expr[, mode])
 
-        TODO.
+        Search a database, return a frozenset of keys whose value match the
+        expressed condition.
+
+        :param expr: case insensitive expresion.
+        :param mode: mode, see :ref:`idb_search_modes`.
+
+        Conditions can be expressed in two ways:
+
+        * When *mode* is given, it must be one of :ref:`idb_search_modes`.
+        * If *mode* is omitted or specified as a negative value, *expr* can then
+          be used to express more complex conditions using
+          :ref:`idb_search_compound_expression`.
+
+        .. seealso::
+            'Compound Expression of Search' at `Tokyo Dystopia documentation
+            <http://1978th.net/tokyodystopia/spex.html#dystopiaapi>`_.
 
 
     .. method:: optimize
@@ -287,28 +304,138 @@ The following constants can be combined with either :const:`IDBOREADER` or
 
 .. data:: IDBSSUBSTR
 
-    TODO.
+    ::
+
+        expr in value #substring test
 
 .. data:: IDBSPREFIX
 
-    TODO.
+    ::
+
+        value.startswith(expr)
 
 .. data:: IDBSSUFFIX
 
-    TODO.
+    ::
+
+        value.endswith(expr)
 
 .. data:: IDBSFULL
 
-    TODO.
+    ::
+
+        value == expr
 
 .. data:: IDBSTOKEN
 
-    TODO.
+    ::
+
+        expr in value.split()
 
 .. data:: IDBSTOKPRE
 
-    TODO.
+    ::
+
+        v.startswith(expr) for v in value.split()
 
 .. data:: IDBSTOKSUF
 
-    TODO.
+    ::
+
+        v.endswith(expr) for v in value.split()
+
+
+.. _idb_search_compound_expression:
+
+:meth:`IDB.search` mini language
+================================
+
+========================  ======================================================
+ *expr*                    meaning
+========================  ======================================================
+ ``'expr'``                ::
+
+                               expr in value
+ ``'expr1 expr2'``         ::
+
+                               expr1 in value and expr2 in value
+ ``'"expr1 expr2"'``       ::
+
+                               "expr1 expr2" in value
+ ``'[[[[expr'``            ::
+
+                               value.startswith(expr)
+ ``'expr]]]]'``            ::
+
+                               value.endswith(expr)
+ ``'[[expr]]'``            ::
+
+                               expr in value.split()
+ ``'[[*expr*]]'``          ::
+
+                               expr in v for v in value.split()
+ ``'[[expr*]]'``           ::
+
+                               v.startswith(expr) for v in value.split()
+ ``'[[*expr]]'``           ::
+
+                               v.endswith(expr) for v in value.split()
+========================  ======================================================
+
+The expressions above can be combined with ``||`` and/or ``&&`` (``||`` has a
+higher order of precedence).
+
+Example::
+
+    >>> from tokyo.dystopia import *
+    >>> presidents = [(1, 'Washington, George'), (2, 'Adams, John'),
+    ...               (3, 'Jefferson, Thomas'), (4, 'Madison, James'),
+    ...               (5, 'Monroe, James'), (6, 'Adams, John Quincy'),
+    ...               (7, 'Jackson, Andrew'), (8, 'Van Buren, Martin'),
+    ...               (9, 'Harrison, William Henry'), (10, 'Tyler, John'),
+    ...               (11, 'Polk, James Knox'), (12, 'Taylor, Zachary'),
+    ...               (13, 'Fillmore, Millard'), (14, 'Pierce, Franklin'),
+    ...               (15, 'Buchanan, James'), (16, 'Lincoln, Abraham'),
+    ...               (17, 'Johnson, Andrew'), (18, 'Grant, Ulysses S.'),
+    ...               (19, 'Hayes, Rutherford Birchard'), (20, 'Garfield, James Abram'),
+    ...               (21, 'Arthur, Chester Alan'), (22, 'Cleveland, Grover'),
+    ...               (23, 'Harrison, Benjamin'), (24, 'Cleveland, Grover'),
+    ...               (25, 'McKinley, William'), (26, 'Roosevelt, Theodore'),
+    ...               (27, 'Taft, William Howard'), (28, 'Wilson, Woodrow'),
+    ...               (29, 'Harding, Warren Gamaliel'), (30, 'Coolidge, Calvin'),
+    ...               (31, 'Hoover, Herbert Clark'), (32, 'Roosevelt, Franklin Delano'),
+    ...               (33, 'Truman, Harry'), (34, 'Eisenhower, Dwight David'),
+    ...               (35, 'Kennedy, John Fitzgerald'), (36, 'Johnson, Lyndon Baines'),
+    ...               (37, 'Nixon, Richard Milhous'), (38, 'Ford, Gerald Rudolph'),
+    ...               (39, 'Carter, James Earl Jr.'), (40, 'Reagan, Ronald Wilson'),
+    ...               (41, 'Bush, George Herbert Walker'), (42, 'Clinton, William Jefferson'),
+    ...               (43, 'Bush, George Walker'), (44, 'Obama, Barack Hussein')]
+    >>> idb = IDB()
+    >>> idb.open("presidents.tdi", IDBOWRITER | IDBOCREAT)
+    >>> for k, v in presidents:
+    ...     idb[k] = v
+    ...
+    >>> idb.search('earl james')
+    frozenset([39L])
+    >>> idb.search('"earl james"')
+    frozenset([])
+    >>> idb.search('"james earl"')
+    frozenset([39L])
+    >>> idb.search('earl || james')
+    frozenset([4L, 5L, 39L, 11L, 15L, 20L])
+    >>> idb.search('in]]]]')
+    frozenset([8L, 44L, 30L, 14L, 23L])
+    >>> idb.search('in]]]] && am')
+    frozenset([44L, 23L])
+    >>> idb.search('in]]]] && [[am]]')
+    frozenset([])
+    >>> idb.search('in]]]] && [[am*]]')
+    frozenset([])
+    >>> idb.search('in]]]] && [[*am]]')
+    frozenset([])
+    >>> idb.search('in]]]] && [[*am*]]')
+    frozenset([44L, 23L])
+    >>> idb.search('in]]]] && [[ob*]]')
+    frozenset([44L])
+    >>> idb.close()
+    >>>

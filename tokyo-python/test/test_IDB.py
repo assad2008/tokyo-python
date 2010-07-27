@@ -51,6 +51,10 @@ class IDBTestDict(IDBTest):
         self.db[4] = "d"
         self.assertEqual(self.db[3], "c")
         self.assertEqual(self.db[4], "d")
+        if sys.version_info[0] >= 3:
+            self.assertTrue(type(self.db.__getitem__(1)) is str)
+        else:
+            self.assertTrue(type(self.db.__getitem__(1)) is unicode)
 
     def test_setitem(self):
         self.assertRaises(TypeError, self.db.__setitem__)
