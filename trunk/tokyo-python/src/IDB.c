@@ -560,9 +560,13 @@ IDB_search(IDB *self, PyObject *args, PyObject *kwargs)
     const char *expr;
     int mode = -1, result_size;
     uint64_t *result;
-    PyObject *pyresult;
+    PyObject *pyexpr, *pyresult;
 
-    if (!PyArg_ParseTuple(args, "s|i:search", &expr, &mode)) {
+    if (!PyArg_ParseTuple(args, "O|i:search", &pyexpr, &mode)) {
+        return NULL;
+    }
+    expr = PyUnicode_AsString(pyexpr);
+    if (!expr) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS

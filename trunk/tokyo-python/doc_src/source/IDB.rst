@@ -204,7 +204,7 @@ Indexed Database --- :class:`IDB`
         Search a database, return a frozenset of keys whose value match the
         expressed condition.
 
-        :param expr: case insensitive expresion.
+        :param expr: case insensitive expression.
         :param mode: mode, see :ref:`idb_search_modes`.
 
         Conditions can be expressed in two ways:
@@ -371,9 +371,6 @@ The following constants can be combined with either :const:`IDBOREADER` or
  ``'[[expr]]'``            ::
 
                                expr in value.split()
- ``'[[*expr*]]'``          ::
-
-                               expr in v for v in value.split()
  ``'[[expr*]]'``           ::
 
                                v.startswith(expr) for v in value.split()
@@ -433,8 +430,6 @@ Example::
     frozenset([])
     >>> idb.search('in]]]] && [[*am]]')
     frozenset([])
-    >>> idb.search('in]]]] && [[*am*]]')
-    frozenset([44L, 23L])
     >>> idb.search('in]]]] && [[ob*]]')
     frozenset([44L])
     >>> idb.close()
