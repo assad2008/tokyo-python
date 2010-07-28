@@ -4,7 +4,9 @@ import os
 import tempfile
 import shutil
 
-from tokyo.dystopia import IDBOREADER, IDBOWRITER, IDBOCREAT, IDB, Error
+from tokyo.dystopia import (IDBOREADER, IDBOWRITER, IDBOCREAT, IDB, Error,
+                            IDBSSUBSTR, IDBSPREFIX, IDBSSUFFIX, IDBSFULL,
+                            IDBSTOKEN, IDBSTOKPRE, IDBSTOKSUF)
 
 
 class IDBTest(unittest.TestCase):
@@ -135,9 +137,91 @@ class IDBTestIter(IDBTest):
         self.assertEqual({1: "a", 2: "b", 3: "c"}, dict(self.db.iteritems()))
 
 
+class IDBTestMisc(IDBTest):
+
+    def test_path(self):
+        self.assertEqual(self.path, self.db.path)
+
+    def test_size(self):
+        self.assertEqual(os.stat(os.path.join(self.path, "dystopia.tch")).st_size,
+                         self.db.size)
+
+    def test_copy(self):
+        self.db[1] = "a"
+        self.db[2] = "b"
+        path = os.path.join(tempfile.gettempdir(), "tmp_td_test2.tdi")
+        self.db.copy(path)
+        db = IDB()
+        db.open(path, IDBOREADER)
+        self.assertEqual(len(self.db), len(db))
+        self.assertEqual(dict(self.db.iteritems()), dict(db.iteritems()))
+        db.close()
+        shutil.rmtree(path)
+
+
+class IDBTestSearch(unittest.TestCase):
+
+    def setUp(self):
+        self.path = os.path.join(sys.path[0], "presidents.tdi")
+        self.db = IDB()
+        self.db.open(self.path, IDBOREADER)
+
+    def tearDown(self):
+        self.db.close()
+        self.db = None
+
+    def test_search1(self):
+        self.assertEqual(self.db.search("geo", IDBSSUBSTR),
+                         frozenset((1, 41, 43)))
+        self.assertEqual(self.db.search("bus", IDBSPREFIX),frozenset((41, 43)))
+        self.assertEqual(self.db.search("son", IDBSSUFFIX), frozenset((40, 42)))
+        self.assertEqual(self.db.search("washington, george", IDBSFULL),
+                         frozenset((1,)))
+        self.assertEqual(self.db.search("washington george", IDBSFULL),
+                         frozenset())
+        self.assertEqual(self.db.search("george", IDBSTOKEN),
+                         frozenset((1, 41, 43)))
+        self.assertEqual(self.db.search("wil", IDBSTOKPRE),
+                         frozenset((9, 25, 27, 28, 40, 42)))
+        self.assertEqual(self.db.search("ton,", IDBSTOKSUF), frozenset((1, 42)))
+        self.assertEqual(self.db.search("ton", IDBSTOKSUF), frozenset())
+
+    def test_search2(self):
+        self.assertEqual(self.db.search("geor"), frozenset((1, 41, 43)))
+        self.assertEqual(self.db.search("geor walk"), frozenset((41, 43)))
+        self.assertEqual(self.db.search("geor && walk"), frozenset((41, 43)))
+        self.assertEqual(self.db.search("geor || walk"), frozenset((1, 41, 43)))
+
+    def test_search3(self):
+        self.assertEqual(self.db.search('earl james'), frozenset((39,)))
+        self.assertEqual(self.db.search('"earl james"'), frozenset())
+        self.assertEqual(self.db.search('"james earl"'), frozenset((39,)))
+        self.assertEqual(self.db.search('"ames ear"'), frozenset((39,)))
+
+    def test_search4(self):
+        self.assertEqual(self.db.search("in]]]]"),
+                         frozenset((8, 14, 23, 30, 44)))
+        self.assertEqual(self.db.search("[[[[roo"), frozenset((26, 32)))
+        self.assertEqual(self.db.search("[[john*]]"),
+                         frozenset((2, 6, 10, 17, 35, 36)))
+        self.assertEqual(self.db.search("[[*am]]"),
+                         frozenset((9, 16, 20, 25, 27, 42)))
+        self.assertEqual(self.db.search("[[wilson]]"), frozenset((40,)))
+        self.assertEqual(self.db.search("[[wilson,]]"), frozenset((28,)))
+        self.assertEqual(self.db.search("[[wilson*]]"), frozenset((28, 40)))
+
+    def test_search5(self):
+        res = frozenset((28, 40))
+        self.assertEqual(self.db.search("[[*wilson*]]"), res)
+        self.assertEqual(self.db.search("wilson"), res)
+        self.assertEqual(self.db.search("wilson", IDBSSUBSTR), res)
+
+
 all_tests = (
              "IDBTestDict",
              "IDBTestIter",
+             "IDBTestMisc",
+             "IDBTestSearch",
             )
 
 suite = unittest.TestLoader().loadTestsFromNames(all_tests,
