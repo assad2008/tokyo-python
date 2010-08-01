@@ -4,14 +4,13 @@
 Todo
 ====
 
-- Q-gram Database (QDB)
-- Tagged Database (JDB)
-- Word Database (WDB)
 - more/better tests
 - refactor iterators
 - see if we can turn queries into iterators - `Issue 1 <http://code.google.com/p/tokyo-python/issues/detail?id=1>`_
 - Determine if it's worth releasing the GIL around some of tokyo cabinet's api
   call (conversation with Devin Wang)
+- Q-gram Database (QDB) ?
+- Word Database (WDB) ?
 - Array List (List)?
 - Hash Map (Map)?
 - Ordered Tree (Tree)?
@@ -22,6 +21,7 @@ Release 0.7.0
 
 - added tokyo.dystopia module
 - added Indexed Database (IDB)
+- added Tagged Database (JDB)
 
 
 Release 0.6.2
