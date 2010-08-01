@@ -22,6 +22,7 @@
 #include "tokyo.h"
 
 #include <dystopia.h>
+#include <laputa.h>
 
 
 /*******************************************************************************
@@ -34,6 +35,14 @@ typedef struct {
     TCIDB *idb;
     bool changed;
 } IDB;
+
+
+/* JDB */
+typedef struct {
+    PyObject_HEAD
+    TCJDB *jdb;
+    bool changed;
+} JDB;
 
 
 /*******************************************************************************
@@ -58,6 +67,7 @@ pylong_to_int64(PyObject *pyid)
 *******************************************************************************/
 
 #include "IDB.c"
+#include "JDB.c"
 
 
 /*******************************************************************************
@@ -119,7 +129,11 @@ init_dystopia(void)
         PyType_Ready(&IDBType) ||
         PyType_Ready(&IDBIterKeysType) ||
         PyType_Ready(&IDBIterValuesType) ||
-        PyType_Ready(&IDBIterItemsType)
+        PyType_Ready(&IDBIterItemsType) ||
+        PyType_Ready(&JDBType) ||
+        PyType_Ready(&JDBIterKeysType) ||
+        PyType_Ready(&JDBIterValuesType) ||
+        PyType_Ready(&JDBIterItemsType)
        ) {
         return NULL;
     }
@@ -143,6 +157,7 @@ init_dystopia(void)
     if (
         PyModule_AddObject(dystopia, "Error", Error) ||
         PyModule_AddObject(dystopia, "IDB", (PyObject *)&IDBType) ||
+        PyModule_AddObject(dystopia, "JDB", (PyObject *)&JDBType) ||
         /* IDB open mode */
         PyModule_AddIntMacro(dystopia, IDBOREADER) ||
         PyModule_AddIntMacro(dystopia, IDBOWRITER) ||
@@ -162,7 +177,24 @@ init_dystopia(void)
         PyModule_AddIntMacro(dystopia, IDBSFULL) ||
         PyModule_AddIntMacro(dystopia, IDBSTOKEN) ||
         PyModule_AddIntMacro(dystopia, IDBSTOKPRE) ||
-        PyModule_AddIntMacro(dystopia, IDBSTOKSUF)
+        PyModule_AddIntMacro(dystopia, IDBSTOKSUF) ||
+        /* JDB open mode */
+        PyModule_AddIntMacro(dystopia, JDBOREADER) ||
+        PyModule_AddIntMacro(dystopia, JDBOWRITER) ||
+        PyModule_AddIntMacro(dystopia, JDBOCREAT) ||
+        PyModule_AddIntMacro(dystopia, JDBOTRUNC) ||
+        PyModule_AddIntMacro(dystopia, JDBONOLCK) ||
+        PyModule_AddIntMacro(dystopia, JDBOLCKNB) ||
+        /* JDB tune opts */
+        PyModule_AddIntMacro(dystopia, JDBTLARGE) ||
+        PyModule_AddIntMacro(dystopia, JDBTDEFLATE) ||
+        PyModule_AddIntMacro(dystopia, JDBTBZIP) ||
+        PyModule_AddIntMacro(dystopia, JDBTTCBS) ||
+        /* JDB search mode */
+        PyModule_AddIntMacro(dystopia, JDBSSUBSTR) ||
+        PyModule_AddIntMacro(dystopia, JDBSPREFIX) ||
+        PyModule_AddIntMacro(dystopia, JDBSSUFFIX) ||
+        PyModule_AddIntMacro(dystopia, JDBSFULL)
        ) {
         Py_DECREF(Error);
         Py_DECREF(dystopia);
