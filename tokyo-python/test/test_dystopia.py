@@ -1,10 +1,12 @@
 import unittest
 
 import test_IDB
+import test_JDB
 
 
 all_tests = (
              test_IDB,
+             test_JDB,
             )
 
 suite = unittest.TestSuite((test.suite for test in all_tests))
