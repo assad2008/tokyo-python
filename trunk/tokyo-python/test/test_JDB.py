@@ -173,51 +173,37 @@ class JDBTestSearch(unittest.TestCase):
         self.db.close()
         self.db = None
 
-    #def test_search1(self):
-    #    self.assertEqual(self.db.search("geo", JDBSSUBSTR),
-    #                     frozenset((1, 41, 43)))
-    #    self.assertEqual(self.db.search("bus", JDBSPREFIX),frozenset((41, 43)))
-    #    self.assertEqual(self.db.search("son", JDBSSUFFIX), frozenset((40, 42)))
-    #    self.assertEqual(self.db.search("washington, george", JDBSFULL),
-    #                     frozenset((1,)))
-    #    self.assertEqual(self.db.search("washington george", JDBSFULL),
-    #                     frozenset())
-    #    self.assertEqual(self.db.search("george", JDBSTOKEN),
-    #                     frozenset((1, 41, 43)))
-    #    self.assertEqual(self.db.search("wil", JDBSTOKPRE),
-    #                     frozenset((9, 25, 27, 28, 40, 42)))
-    #    self.assertEqual(self.db.search("ton,", JDBSTOKSUF), frozenset((1, 42)))
-    #    self.assertEqual(self.db.search("ton", JDBSTOKSUF), frozenset())
+    def test_search1(self):
+        self.assertEqual(self.db.search("geo", JDBSSUBSTR),
+                         frozenset((1, 41, 43)))
+        self.assertEqual(self.db.search("bus", JDBSPREFIX), frozenset((41, 43)))
+        self.assertEqual(self.db.search("ton", JDBSSUFFIX), frozenset((1, 42)))
+        self.assertEqual(self.db.search("washington", JDBSFULL),
+                         frozenset((1,)))
 
     def test_search2(self):
-        self.assertEqual(self.db.search("geor"), frozenset((1, 41, 43)))
-        self.assertEqual(self.db.search("geor walk"), frozenset((41, 43)))
-        self.assertEqual(self.db.search("geor && walk"), frozenset((41, 43)))
-        self.assertEqual(self.db.search("geor || walk"), frozenset((1, 41, 43)))
+        self.assertEqual(self.db.search("bush"), frozenset((41, 43)))
+        self.assertEqual(self.db.search("johnson"), frozenset((17, 36)))
+        self.assertEqual(self.db.search("johnson andrew"), frozenset((17,)))
+        self.assertEqual(self.db.search("johnson && andrew"), frozenset((17,)))
+        self.assertEqual(self.db.search("johnson || andrew"),
+                         frozenset((7, 17, 36)))
 
-    #def test_search3(self):
-    #    self.assertEqual(self.db.search('earl james'), frozenset((39,)))
-    #    self.assertEqual(self.db.search('"earl james"'), frozenset())
-    #    self.assertEqual(self.db.search('"james earl"'), frozenset((39,)))
-    #    self.assertEqual(self.db.search('"ames ear"'), frozenset((39,)))
+    def test_search3(self):
+        self.assertEqual(self.db.search('james earl jr.'), frozenset(()))
+        self.assertEqual(self.db.search('"james earl jr."'), frozenset((39,)))
 
-    #def test_search4(self):
-    #    self.assertEqual(self.db.search("in]]]]"),
-    #                     frozenset((8, 14, 23, 30, 44)))
-    #    self.assertEqual(self.db.search("[[[[roo"), frozenset((26, 32)))
-    #    self.assertEqual(self.db.search("[[john*]]"),
-    #                     frozenset((2, 6, 10, 17, 35, 36)))
-    #    self.assertEqual(self.db.search("[[*am]]"),
-    #                     frozenset((9, 16, 20, 25, 27, 42)))
-    #    self.assertEqual(self.db.search("[[wilson]]"), frozenset((40,)))
-    #    self.assertEqual(self.db.search("[[wilson,]]"), frozenset((28,)))
-    #    self.assertEqual(self.db.search("[[wilson*]]"), frozenset((28, 40)))
+    def test_search4(self):
+        self.assertEqual(self.db.search("[[john*]]"),
+                         frozenset((2, 6, 10, 17, 35, 36)))
+        self.assertEqual(self.db.search("[[*am]]"), frozenset((16, 20, 25)))
+        self.assertEqual(self.db.search("[[*wilson*]]"), frozenset((28, 40)))
 
-    #def test_search5(self):
-    #    res = frozenset((28, 40))
-    #    self.assertEqual(self.db.search("[[*wilson*]]"), res)
-    #    self.assertEqual(self.db.search("wilson"), res)
-    #    self.assertEqual(self.db.search("wilson", JDBSSUBSTR), res)
+    def test_search5(self):
+        res = frozenset((28, 40))
+        self.assertEqual(self.db.search("[[*wilson*]]"), res)
+        self.assertEqual(self.db.search("wilson || reagan"), res)
+        self.assertEqual(self.db.search("wilson", JDBSSUBSTR), res)
 
 
 all_tests = (
