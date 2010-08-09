@@ -54,7 +54,7 @@ Fixed-length Database --- :class:`FDB`
 
     .. seealso::
         `The Fixed-length Database API
-        <http://1978th.net/tokyocabinet/spex-en.html#tcfdbapi>`_
+        <http://fallabs.com/tokyocabinet/spex-en.html#tcfdbapi>`_
 
 
     .. describe:: len(fdb)

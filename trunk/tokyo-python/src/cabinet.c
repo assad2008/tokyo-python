@@ -146,7 +146,7 @@ TODO\n\
 \n\
 See also:\n\
 Tokyo Cabinet documentation at:\n\
-http://1978th.net/tokyocabinet/");
+http://fallabs.com/tokyocabinet/");
 
 
 /* cabinet.version() -> str */

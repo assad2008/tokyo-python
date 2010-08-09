@@ -1,10 +1,10 @@
 tokyo-python is a set of Python interfaces to `Mikio Hirabayashi
-<http://1978th.net/>`_'s Tokyo libraries, it includes:
+<http://fallabs.com/>`_'s Tokyo libraries, it includes:
 
-- :mod:`tokyo.cabinet`, an interface to `Tokyo Cabinet <http://1978th.net/tokyocabinet/>`_
+- :mod:`tokyo.cabinet`, an interface to `Tokyo Cabinet <http://fallabs.com/tokyocabinet/>`_
 - :mod:`tokyo.dbm`, a :mod:`dbm` compatible interface to :mod:`tokyo.cabinet`
-- :mod:`tokyo.tyrant`, an interface to `Tokyo Tyrant <http://1978th.net/tokyotyrant/>`_
-- :mod:`tokyo.dystopia`, an interface to `Tokyo Dystopia <http://1978th.net/tokyodystopia/>`_
+- :mod:`tokyo.tyrant`, an interface to `Tokyo Tyrant <http://fallabs.com/tokyotyrant/>`_
+- :mod:`tokyo.dystopia`, an interface to `Tokyo Dystopia <http://fallabs.com/tokyodystopia/>`_
 
 
 Useful links:

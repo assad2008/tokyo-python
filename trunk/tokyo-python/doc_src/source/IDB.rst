@@ -56,7 +56,7 @@ Indexed Database --- :class:`IDB`
 
     .. seealso::
         `Tokyo Dystopia Core API
-        <http://1978th.net/tokyodystopia/spex.html#dystopiaapi>`_
+        <http://fallabs.com/tokyodystopia/spex.html#dystopiaapi>`_
 
 
     .. describe:: len(idb)
@@ -216,7 +216,7 @@ Indexed Database --- :class:`IDB`
 
         .. seealso::
             'Compound Expression of Search' at `Tokyo Dystopia documentation
-            <http://1978th.net/tokyodystopia/spex.html#dystopiaapi>`_.
+            <http://fallabs.com/tokyodystopia/spex.html#dystopiaapi>`_.
 
 
     .. method:: optimize

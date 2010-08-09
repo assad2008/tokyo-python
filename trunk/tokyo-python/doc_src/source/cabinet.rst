@@ -28,11 +28,11 @@ purposes. They are achieved and Tokyo Cabinet replaces conventional DBM products
   available.
 
 .. todo::
-    Rewrite the previous section (copy/pasted from http://1978th.net/tokyocabinet/).
+    Rewrite the previous section (copy/pasted from http://fallabs.com/tokyocabinet/).
 
 .. seealso::
     `Fundamental Specifications of Tokyo Cabinet Version 1
-    <http://1978th.net/tokyocabinet/spex-en.html>`_ for more information about
+    <http://fallabs.com/tokyocabinet/spex-en.html>`_ for more information about
     Tokyo Cabinet.
 
 

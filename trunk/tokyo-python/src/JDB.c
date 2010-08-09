@@ -306,7 +306,7 @@ Tagged Database.\n\
 \n\
 See also:\n\
 Tokyo Dystopia Simple API at:\n\
-http://1978th.net/tokyodystopia/spex.html#laputaapi");
+http://fallabs.com/tokyodystopia/spex.html#laputaapi");
 
 
 /* JDBType.tp_dealloc */

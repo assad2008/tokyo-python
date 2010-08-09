@@ -237,7 +237,7 @@ Indexed Database.\n\
 \n\
 See also:\n\
 Tokyo Dystopia Core API at:\n\
-http://1978th.net/tokyodystopia/spex.html#dystopiaapi");
+http://fallabs.com/tokyodystopia/spex.html#dystopiaapi");
 
 
 /* IDBType.tp_dealloc */

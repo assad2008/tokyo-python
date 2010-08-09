@@ -22,8 +22,8 @@ Remote Database --- :class:`RDB`
         # - on-memory tree database: ttserver +
         # - hash database: ttserver test.tch
         # - B+ tree database: ttserver test.tcb
-        # see http://1978th.net/tokyotyrant/spex.html#serverprog and
-        # http://1978th.net/tokyotyrant/spex.html#tutorial for more info
+        # see http://fallabs.com/tokyotyrant/spex.html#serverprog and
+        # http://fallabs.com/tokyotyrant/spex.html#tutorial for more info
         # about ttserver
 
         from tokyo.tyrant import *
@@ -66,7 +66,7 @@ Remote Database --- :class:`RDB`
 
     .. seealso::
         `Remote Database API
-        <http://1978th.net/tokyotyrant/spex.html#tcrdbapi>`_
+        <http://fallabs.com/tokyotyrant/spex.html#tcrdbapi>`_
 
 
     .. describe:: len(rdb)

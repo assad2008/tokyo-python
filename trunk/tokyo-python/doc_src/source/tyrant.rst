@@ -18,11 +18,11 @@ Thus, Tokyo Tyrant is provided for concurrent and remote connections to Tokyo
 Cabinet.
 
 .. todo::
-    Rewrite the previous section (copy/pasted from http://1978th.net/tokyotyrant/).
+    Rewrite the previous section (copy/pasted from http://fallabs.com/tokyotyrant/).
 
 .. seealso::
     `Fundamental Specifications of Tokyo Tyrant Version 1
-    <http://1978th.net/tokyotyrant/spex.html>`_ for more information about
+    <http://fallabs.com/tokyotyrant/spex.html>`_ for more information about
     Tokyo Tyrant.
 
 

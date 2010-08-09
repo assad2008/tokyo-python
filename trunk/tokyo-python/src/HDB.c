@@ -238,7 +238,7 @@ Hash Database.\n\
 \n\
 See also:\n\
 Tokyo Cabinet Hash Database API at:\n\
-http://1978th.net/tokyocabinet/spex-en.html#tchdbapi");
+http://fallabs.com/tokyocabinet/spex-en.html#tchdbapi");
 
 
 /* HDBType.tp_dealloc */

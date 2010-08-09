@@ -43,7 +43,7 @@ On-memory Hash Database --- :class:`MDB`
 
     .. seealso::
         `API of On-memory Hash Database
-        <http://1978th.net/tokyocabinet/spex-en.html#tcutilapi_mdbapi>`_
+        <http://fallabs.com/tokyocabinet/spex-en.html#tcutilapi_mdbapi>`_
 
 
     .. describe:: len(mdb)

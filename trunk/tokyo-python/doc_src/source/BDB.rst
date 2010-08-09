@@ -53,7 +53,7 @@ B+ Tree Database --- :class:`BDB`
 
     .. seealso::
         `The B+ Tree Database API
-        <http://1978th.net/tokyocabinet/spex-en.html#tcbdbapi>`_
+        <http://fallabs.com/tokyocabinet/spex-en.html#tcbdbapi>`_
 
 
     .. describe:: len(bdb)

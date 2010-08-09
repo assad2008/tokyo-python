@@ -51,7 +51,7 @@ Hash Database --- :class:`HDB`
 
     .. seealso::
         `The Hash Database API
-        <http://1978th.net/tokyocabinet/spex-en.html#tchdbapi>`_
+        <http://fallabs.com/tokyocabinet/spex-en.html#tchdbapi>`_
 
 
     .. describe:: len(hdb)

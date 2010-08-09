@@ -40,7 +40,7 @@ On-memory Tree Database --- :class:`NDB`
 
     .. seealso::
         `API of On-memory Tree Database
-        <http://1978th.net/tokyocabinet/spex-en.html#tcutilapi_ndbapi>`_
+        <http://fallabs.com/tokyocabinet/spex-en.html#tcutilapi_ndbapi>`_
 
 
     .. describe:: len(ndb)
