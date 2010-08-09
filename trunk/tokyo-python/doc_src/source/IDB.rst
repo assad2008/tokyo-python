@@ -159,7 +159,7 @@ Indexed Database --- :class:`IDB`
 
     .. method:: copy(path)
 
-        Copy the database file.
+        Copy the database directory.
 
         :param path: path to the destination directory.
 
@@ -286,15 +286,15 @@ The following constants can be combined with either :const:`IDBOREADER` or
 
 .. data:: IDBTDEFLATE
 
-    Each record is compressed with Deflate encoding.
+    Each page is compressed with Deflate encoding.
 
 .. data:: IDBTBZIP
 
-    Each record is compressed with BZIP2 encoding.
+    Each page is compressed with BZIP2 encoding.
 
 .. data:: IDBTTCBS
 
-    Each record is compressed with TCBS encoding.
+    Each page is compressed with TCBS encoding.
 
 
 .. _idb_search_modes:
@@ -350,34 +350,34 @@ The following constants can be combined with either :const:`IDBOREADER` or
 :meth:`IDB.search` mini language
 ================================
 
-========================  ======================================================
- *expr*                    meaning
-========================  ======================================================
- ``'expr'``                ::
+=========================  =====================================================
+ *expr*                     meaning
+=========================  =====================================================
+ ``'expr'``                 ::
 
-                               expr in value
- ``'expr1 expr2'``         ::
+                                expr in value
+ ``'expr1 expr2'``          ::
 
-                               expr1 in value and expr2 in value
- ``'"expr1 expr2"'``       ::
+                                expr1 in value and expr2 in value
+ ``'"expr1 expr2"'``        ::
 
-                               "expr1 expr2" in value
- ``'[[[[expr'``            ::
+                                "expr1 expr2" in value
+ ``'[[[[expr'``             ::
 
-                               value.startswith(expr)
- ``'expr]]]]'``            ::
+                                value.startswith(expr)
+ ``'expr]]]]'``             ::
 
-                               value.endswith(expr)
- ``'[[expr]]'``            ::
+                                value.endswith(expr)
+ ``'[[expr]]'``             ::
 
-                               expr in value.split()
- ``'[[expr*]]'``           ::
+                                expr in value.split()
+ ``'[[expr*]]'``            ::
 
-                               v.startswith(expr) for v in value.split()
- ``'[[*expr]]'``           ::
+                                v.startswith(expr) for v in value.split()
+ ``'[[*expr]]'``            ::
 
-                               v.endswith(expr) for v in value.split()
-========================  ======================================================
+                                v.endswith(expr) for v in value.split()
+=========================  =====================================================
 
 The expressions above can be combined with ``||`` and/or ``&&`` (``||`` has a
 higher order of precedence).
