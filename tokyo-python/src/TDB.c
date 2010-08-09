@@ -713,7 +713,7 @@ Table Database.\n\
 \n\
 See also:\n\
 Tokyo Cabinet Table Database API at:\n\
-http://1978th.net/tokyocabinet/spex-en.html#tctdbapi");
+http://fallabs.com/tokyocabinet/spex-en.html#tctdbapi");
 
 
 /* TDBType.tp_dealloc */

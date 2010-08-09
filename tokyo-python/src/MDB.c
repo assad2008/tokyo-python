@@ -205,7 +205,7 @@ On-memory Hash Database.\n\
 \n\
 See also:\n\
 Tokyo Cabinet On-memory Hash Database API at:\n\
-http://1978th.net/tokyocabinet/spex-en.html#tcutilapi_mdbapi");
+http://fallabs.com/tokyocabinet/spex-en.html#tcutilapi_mdbapi");
 
 
 /* MDBType.tp_dealloc */

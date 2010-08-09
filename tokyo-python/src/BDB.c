@@ -666,7 +666,7 @@ B+ Tree Database.\n\
 \n\
 See also:\n\
 Tokyo Cabinet B+ Tree Database API at:\n\
-http://1978th.net/tokyocabinet/spex-en.html#tcbdbapi");
+http://fallabs.com/tokyocabinet/spex-en.html#tcbdbapi");
 
 
 /* BDBType.tp_dealloc */

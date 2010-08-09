@@ -82,7 +82,7 @@ TODO\n\
 \n\
 See also:\n\
 Tokyo Dystopia documentation at:\n\
-http://1978th.net/tokyodystopia/");
+http://fallabs.com/tokyodystopia/");
 
 
 /* dystopia.version() -> str */

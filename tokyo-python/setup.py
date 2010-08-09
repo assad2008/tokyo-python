@@ -63,20 +63,20 @@ def check_extension(ext):
     return lib
 
 cabinet_ext = TokyoPythonExt(True, "tokyocabinet", "Tokyo Cabinet", "1.4.45",
-                             "tcversion", "http://1978th.net/tokyocabinet/",
+                             "tcversion", "http://fallabs.com/tokyocabinet/",
                              "tokyo.cabinet", ["src/cabinet.c"],
                              libraries=["tokyocabinet", "z", "bz2", "rt",
                                         "pthread", "m", "c"])
 
 tyrant_ext = TokyoPythonExt(False, "tokyotyrant", "Tokyo Tyrant", "1.1.40",
-                            "ttversion", "http://1978th.net/tokyotyrant/",
+                            "ttversion", "http://fallabs.com/tokyotyrant/",
                             "tokyo.tyrant", ["src/tyrant.c"],
                             libraries=["tokyotyrant", "tokyocabinet", "z", "bz2",
                                        "resolv", "nsl", "dl", "rt", "pthread",
                                        "m", "c"])
 
 dystopia_ext = TokyoPythonExt(False, "tokyodystopia", "Tokyo Dystopia", "0.9.14",
-                              "tdversion", "http://1978th.net/tokyodystopia/",
+                              "tdversion", "http://fallabs.com/tokyodystopia/",
                               "tokyo.dystopia", ["src/dystopia.c"],
                               libraries=["tokyodystopia", "tokyocabinet", "z",
                                          "bz2", "pthread", "m", "c"])

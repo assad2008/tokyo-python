@@ -203,7 +203,7 @@ On-memory Tree Database.\n\
 \n\
 See also:\n\
 Tokyo Cabinet On-memory Tree Database API at:\n\
-http://1978th.net/tokyocabinet/spex-en.html#tcutilapi_ndbapi");
+http://fallabs.com/tokyocabinet/spex-en.html#tcutilapi_ndbapi");
 
 
 /* NDBType.tp_dealloc */

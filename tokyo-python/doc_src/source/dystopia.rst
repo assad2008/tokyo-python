@@ -24,11 +24,11 @@ is the following.
 - Layered Architecture of APIs
 
 .. todo::
-    Rewrite the previous section (copy/pasted from http://1978th.net/tokyodystopia/).
+    Rewrite the previous section (copy/pasted from http://fallabs.com/tokyodystopia/).
 
 .. seealso::
     `Fundamental Specifications of Tokyo Dystopia Version 1
-    <http://1978th.net/tokyodystopia/spex.html>`_ for more information about
+    <http://fallabs.com/tokyodystopia/spex.html>`_ for more information about
     Tokyo Dystopia.
 
 

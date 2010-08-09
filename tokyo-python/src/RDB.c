@@ -148,7 +148,7 @@ Remote Database.\n\
 \n\
 See also:\n\
 Tokyo Tyrant Remote Database API at:\n\
-http://1978th.net/tokyotyrant/spex.html#tcrdbapi");
+http://fallabs.com/tokyotyrant/spex.html#tcrdbapi");
 
 
 /* RDB_tp_as_sequence.sq_contains */

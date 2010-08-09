@@ -60,7 +60,7 @@ Table Database --- :class:`TDB`
 
     .. seealso::
         `The Table Database API
-        <http://1978th.net/tokyocabinet/spex-en.html#tctdbapi>`_
+        <http://fallabs.com/tokyocabinet/spex-en.html#tctdbapi>`_
 
 
     .. describe:: len(tdb)

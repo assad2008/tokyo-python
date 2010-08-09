@@ -539,7 +539,7 @@ Remote Table Database.\n\
 \n\
 See also:\n\
 Tokyo Tyrant Remote Table Database API at:\n\
-http://1978th.net/tokyotyrant/spex.html#tcrdbapi_apitbl");
+http://fallabs.com/tokyotyrant/spex.html#tcrdbapi_apitbl");
 
 
 /* RTDB_tp_as_sequence.sq_contains */

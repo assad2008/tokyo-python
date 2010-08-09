@@ -239,7 +239,7 @@ Fixed-length Database.\n\
 \n\
 See also:\n\
 Tokyo Cabinet Fixed-length Database API at:\n\
-http://1978th.net/tokyocabinet/spex-en.html#tcfdbapi");
+http://fallabs.com/tokyocabinet/spex-en.html#tcfdbapi");
 
 
 /* FDBType.tp_dealloc */

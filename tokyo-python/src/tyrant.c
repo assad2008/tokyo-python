@@ -77,7 +77,7 @@ TODO\n\
 \n\
 See also:\n\
 Tokyo Tyrant documentation at:\n\
-http://1978th.net/tokyotyrant/");
+http://fallabs.com/tokyotyrant/");
 
 
 /* tyrant.version() -> str */

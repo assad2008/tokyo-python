@@ -18,8 +18,8 @@ Remote Table Database --- :class:`RTDB`
 
         # First you need to start a ttserver, example command (starting a
         # server on default address localhost:1978): ttserver test.tct
-        # see http://1978th.net/tokyotyrant/spex.html#serverprog and
-        # http://1978th.net/tokyotyrant/spex.html#tutorial for more info
+        # see http://fallabs.com/tokyotyrant/spex.html#serverprog and
+        # http://fallabs.com/tokyotyrant/spex.html#tutorial for more info
         # about ttserver
 
         from tokyo.tyrant import *
@@ -63,7 +63,7 @@ Remote Table Database --- :class:`RTDB`
 
     .. seealso::
         `API of the Table Extension
-        <http://1978th.net/tokyotyrant/spex.html#tcrdbapi_apitbl>`_
+        <http://fallabs.com/tokyotyrant/spex.html#tcrdbapi_apitbl>`_
 
 
     .. describe:: len(rtdb)
