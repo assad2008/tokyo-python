@@ -21,6 +21,7 @@
 
 from platform import python_version
 from os import name as os_name
+from sys import platform as sys_name
 from ctypes import cdll, c_char_p
 from ctypes.util import find_library
 from sys import argv
@@ -47,6 +48,8 @@ class TokyoPythonExt(object):
         self.min_ver = min_ver
         self.ver_char_p = ver_char_p
         self.url = url
+        if sys_name != "darwin" and libname != "tokyodystopia":
+            kwargs["libraries"].append("rt")
         self.c_ext = Extension(*args, **kwargs)
 
 err_msg = """Aborted: tokyo-python requires {0} >= {1} to be installed.
@@ -65,15 +68,14 @@ def check_extension(ext):
 cabinet_ext = TokyoPythonExt(True, "tokyocabinet", "Tokyo Cabinet", "1.4.45",
                              "tcversion", "http://fallabs.com/tokyocabinet/",
                              "tokyo.cabinet", ["src/cabinet.c"],
-                             libraries=["tokyocabinet", "z", "bz2", "rt",
-                                        "pthread", "m", "c"])
+                             libraries=["tokyocabinet", "z", "bz2",  "pthread",
+                                        "m", "c"])
 
 tyrant_ext = TokyoPythonExt(False, "tokyotyrant", "Tokyo Tyrant", "1.1.40",
                             "ttversion", "http://fallabs.com/tokyotyrant/",
                             "tokyo.tyrant", ["src/tyrant.c"],
                             libraries=["tokyotyrant", "tokyocabinet", "z", "bz2",
-                                       "resolv", "nsl", "dl", "rt", "pthread",
-                                       "m", "c"])
+                                       "resolv", "nsl", "dl", "pthread", "m", "c"])
 
 dystopia_ext = TokyoPythonExt(False, "tokyodystopia", "Tokyo Dystopia", "0.9.14",
                               "tdversion", "http://fallabs.com/tokyodystopia/",
@@ -92,7 +94,7 @@ class build_ext(_build_ext):
 
 setup(
       name="tokyo-python",
-      version="0.7.0",
+      version="0.7.1",
       url="http://packages.python.org/tokyo-python/",
       download_url="http://pypi.python.org/pypi/tokyo-python/",
       description="Tokyo libraries Python interface.",
