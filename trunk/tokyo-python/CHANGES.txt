@@ -16,6 +16,12 @@ Todo
 - Ordered Tree (Tree)?
 
 
+Release 0.7.1
+=============
+
+- do not link against librt on mac os x - `Issue 4 <http://code.google.com/p/tokyo-python/issues/detail?id=4>`_ fixed
+
+
 Release 0.7.0
 =============
 
