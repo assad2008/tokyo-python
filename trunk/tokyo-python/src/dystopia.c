@@ -149,15 +149,14 @@ init_dystopia(void)
     }
     /* dystopia.Error object */
     Error = PyErr_NewException("tokyo.dystopia.Error", NULL, NULL);
-    if (!Error) {
-        Py_DECREF(dystopia);
-        return NULL;
+    if (!Error || PyModule_AddObject(dystopia, "Error", Error)) {
+        Py_XDECREF(Error);
+        goto fail;
     }
-    /* adding objects and constants */
+    /* adding types and constants */
     if (
-        PyModule_AddObject(dystopia, "Error", Error) ||
-        PyModule_AddObject(dystopia, "IDB", (PyObject *)&IDBType) ||
-        PyModule_AddObject(dystopia, "JDB", (PyObject *)&JDBType) ||
+        PyModule_AddType(dystopia, "IDB", &IDBType) ||
+        PyModule_AddType(dystopia, "JDB", &JDBType) ||
         /* IDB open mode */
         PyModule_AddIntMacro(dystopia, IDBOREADER) ||
         PyModule_AddIntMacro(dystopia, IDBOWRITER) ||
@@ -196,11 +195,15 @@ init_dystopia(void)
         PyModule_AddIntMacro(dystopia, JDBSSUFFIX) ||
         PyModule_AddIntMacro(dystopia, JDBSFULL)
        ) {
-        Py_DECREF(Error);
-        Py_DECREF(dystopia);
-        return NULL;
+        goto fail;
     }
     return dystopia;
+
+fail:
+#if PY_MAJOR_VERSION >= 3
+    Py_DECREF(dystopia);
+#endif
+    return NULL;
 }
 
 #if PY_MAJOR_VERSION >= 3
