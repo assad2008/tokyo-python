@@ -20,6 +20,8 @@ Release 0.7.1
 =============
 
 - do not link against librt on mac os x - `Issue 4 <http://code.google.com/p/tokyo-python/issues/detail?id=4>`_ fixed
+- fix modules initialisation (modules and errors were incorrectly decrefed in
+  case of failure / types were not increfed at all)
 
 
 Release 0.7.0

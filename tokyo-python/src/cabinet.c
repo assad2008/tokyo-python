@@ -231,19 +231,18 @@ init_cabinet(void)
     }
     /* cabinet.Error object */
     Error = PyErr_NewException("tokyo.cabinet.Error", NULL, NULL);
-    if (!Error) {
-        Py_DECREF(cabinet);
-        return NULL;
+    if (!Error || PyModule_AddObject(cabinet, "Error", Error)) {
+        Py_XDECREF(Error);
+        goto fail;
     }
-    /* adding objects and constants */
+    /* adding types and constants */
     if (
-        PyModule_AddObject(cabinet, "Error", Error) ||
-        PyModule_AddObject(cabinet, "HDB", (PyObject *)&HDBType) ||
-        PyModule_AddObject(cabinet, "MDB", (PyObject *)&MDBType) ||
-        PyModule_AddObject(cabinet, "BDB", (PyObject *)&BDBType) ||
-        PyModule_AddObject(cabinet, "NDB", (PyObject *)&NDBType) ||
-        PyModule_AddObject(cabinet, "FDB", (PyObject *)&FDBType) ||
-        PyModule_AddObject(cabinet, "TDB", (PyObject *)&TDBType) ||
+        PyModule_AddType(cabinet, "HDB", &HDBType) ||
+        PyModule_AddType(cabinet, "MDB", &MDBType) ||
+        PyModule_AddType(cabinet, "BDB", &BDBType) ||
+        PyModule_AddType(cabinet, "NDB", &NDBType) ||
+        PyModule_AddType(cabinet, "FDB", &FDBType) ||
+        PyModule_AddType(cabinet, "TDB", &TDBType) ||
         /* useful for addint */
         PyModule_AddIntMacro(cabinet, INT_MAX) ||
         PyModule_AddIntMacro(cabinet, INT_MIN) ||
@@ -352,11 +351,15 @@ init_cabinet(void)
         PyModule_AddIntMacro(cabinet, TDBMSISECT) ||
         PyModule_AddIntMacro(cabinet, TDBMSDIFF)
        ) {
-        Py_DECREF(Error);
-        Py_DECREF(cabinet);
-        return NULL;
+        goto fail;
     }
     return cabinet;
+
+fail:
+#if PY_MAJOR_VERSION >= 3
+    Py_DECREF(cabinet);
+#endif
+    return NULL;
 }
 
 #if PY_MAJOR_VERSION >= 3

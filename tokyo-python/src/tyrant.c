@@ -149,25 +149,28 @@ init_tyrant(void)
     }
     /* tyrant.Error object */
     Error = PyErr_NewException("tokyo.tyrant.Error", NULL, NULL);
-    if (!Error) {
-        Py_DECREF(tyrant);
-        return NULL;
+    if (!Error || PyModule_AddObject(tyrant, "Error", Error)) {
+        Py_XDECREF(Error);
+        goto fail;
     }
-    /* adding objects and constants */
+    /* adding types and constants */
     if (
-        PyModule_AddObject(tyrant, "Error", Error) ||
-        PyModule_AddObject(tyrant, "RDB", (PyObject *)&RDBType) ||
-        PyModule_AddObject(tyrant, "RTDB", (PyObject *)&RTDBType) ||
+        PyModule_AddType(tyrant, "RDB", &RDBType) ||
+        PyModule_AddType(tyrant, "RTDB", &RTDBType) ||
         /* RDB tune opts */
         PyModule_AddIntMacro(tyrant, RDBTRECON) ||
         /* RDB restore/setmaster opts */
         PyModule_AddIntMacro(tyrant, RDBROCHKCON)
        ) {
-        Py_DECREF(Error);
-        Py_DECREF(tyrant);
-        return NULL;
+        goto fail;
     }
     return tyrant;
+
+fail:
+#if PY_MAJOR_VERSION >= 3
+    Py_DECREF(tyrant);
+#endif
+    return NULL;
 }
 
 #if PY_MAJOR_VERSION >= 3

@@ -50,6 +50,19 @@ static PyObject *Error;
 * utilities
 *******************************************************************************/
 
+/* Add a type to a module */
+int
+PyModule_AddType(PyObject *module, const char *name, PyTypeObject *type)
+{
+    Py_INCREF(type);
+    if (PyModule_AddObject(module, name, (PyObject *)type)) {
+        Py_DECREF(type);
+        return -1;
+    }
+    return 0;
+}
+
+
 /* error handling utils */
 PyObject *
 set_error(PyObject *type, const char *message)
